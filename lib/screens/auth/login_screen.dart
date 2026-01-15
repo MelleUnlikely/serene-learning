@@ -25,7 +25,7 @@ Future<void> _handleLogin() async {
     if (response.user != null) {
       // Fetch the role and school info
       final userData = await Supabase.instance.client
-          .from('users')
+          .from('profiles')
           .select('roletype, userid, schoolid')
           .eq('email', response.user!.email!)
           .single();  
