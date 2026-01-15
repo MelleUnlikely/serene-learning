@@ -26,6 +26,13 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
 
   // Fetch classes
   Future<void> _fetchMyClasses() async {
+
+    final userId = widget.teacherId == 0 
+        ? Supabase.instance.client.auth.currentUser?.id 
+        : widget.teacherId;
+
+    if (userId == null) return;
+    
     final data = await Supabase.instance.client
         .from('class')
         .select()

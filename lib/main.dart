@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/auth/login_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
+import 'screens/teacher/class_screen.dart'; 
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 
 void main() async {
 
@@ -11,19 +16,28 @@ void main() async {
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6aGdnbmJ6cGZmcmF0Ym9kbmp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3NjA0MjAsImV4cCI6MjA4MzMzNjQyMH0.MLZmjoBXA2W7WU0CRmhDBAu4POPgq2kfXff-YaZvdSU',
   );
 
+  usePathUrlStrategy();
   runApp(const MyApp());
 }
+
+
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
+
+    final session = Supabase.instance.client.auth.currentSession;
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      initialRoute: '/login', 
+      initialRoute: session != null ? '/dashboard' : '/login', 
       
       routes: {
-        '/login': (context) => const LoginScreen()},
+        '/login': (context) => const LoginScreen(),
+        '/dashboard': (context) => const CreateClassScreen(teacherId: 0), },
+        
     );
   }
 }
