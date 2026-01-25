@@ -82,7 +82,7 @@ Future<void> _handleLogin() async {
                 constraints: const BoxConstraints(maxWidth: 400), // Perfect for Web!
                 padding: const EdgeInsets.all(30),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9), // Makes the box stand out
+                  color: Colors.white.withValues(alpha: 0.9), // Makes the box stand out
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(

@@ -4,7 +4,6 @@ import 'screens/auth/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'screens/teacher/class_screen.dart'; 
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 
 void main() async {

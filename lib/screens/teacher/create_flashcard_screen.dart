@@ -16,6 +16,7 @@ class _CreateFlashcardScreenState extends State<CreateFlashcardScreen> {
   String? _uploadedVideoUrl;
   bool _isUploading = false;
   
+  
   List<Map<String, dynamic>> _existingCards = [];
 
   @override
@@ -125,7 +126,7 @@ double _uploadProgress = 0;
                   subtitle: const Text("Video & Image attached"),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () => _deleteCard(card['flashcardid']),
+                    onPressed: () => _deleteCard(card),
                   ),
                 );
               },
@@ -175,17 +176,15 @@ double _uploadProgress = 0;
       }
     }
 
-    Future<void> _deleteCard(Map<String, dynamic> card) async {
+  Future<void> _deleteCard(Map<String, dynamic> card) async {
     final id = card['flashcardid'];
     final String? imgUrl = card['imgurl'];
     final String? videoUrl = card['videourl'];
 
     try {
-      // remove files from medi bucket
       List<String> filesToDelete = [];
-      
-      if (imgUrl != null) filesToDelete.add(_getFilePathFromUrl(imgUrl));
-      if (videoUrl != null) filesToDelete.add(_getFilePathFromUrl(videoUrl));
+      if (imgUrl != null && imgUrl.contains('media')) filesToDelete.add(_getFilePathFromUrl(imgUrl));
+      if (videoUrl != null && videoUrl.contains('media')) filesToDelete.add(_getFilePathFromUrl(videoUrl));
 
       if (filesToDelete.isNotEmpty) {
         await Supabase.instance.client.storage
@@ -193,7 +192,6 @@ double _uploadProgress = 0;
             .remove(filesToDelete);
       }
 
-      //Remove the row from the Database
       await Supabase.instance.client
           .from('flashcard')
           .delete()
@@ -203,13 +201,21 @@ double _uploadProgress = 0;
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Card and associated files deleted.")),
+          const SnackBar(content: Text("Card and files deleted successfully!")),
         );
       }
     } catch (e) {
       debugPrint("Delete error: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Could not delete: This card might be part of an existing Quiz."),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
-  }
+}
 
   String _getFilePathFromUrl(String url) {
     final Uri uri = Uri.parse(url);

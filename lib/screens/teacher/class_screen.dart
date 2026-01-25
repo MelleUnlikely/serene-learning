@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:math';
-import '../teacher/lesson_screen.dart'; 
+import '../teacher/lesson_screen.dart';
+import '../teacher/student_list_screen.dart';  
 
 class CreateClassScreen extends StatefulWidget {
   final int teacherId; // The userID of the teacher
@@ -14,9 +15,12 @@ class CreateClassScreen extends StatefulWidget {
 
 class _CreateClassScreenState extends State<CreateClassScreen> {
   final _classNameController = TextEditingController();
+
   String _curriculumLevel = 'Beginner';
   bool _isLoading = false;
   List<Map<String, dynamic>> _myClasses = [];
+
+  final List<String> _levels = ['Beginner', 'Intermediate', 'Advanced'];
 
   @override
   void initState() {
@@ -45,16 +49,16 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
     return (Random().nextInt(9000) + 1000).toString();
   }
 
-//curriculum lebels
-final String _selectedGrade = 'Grade 1';
-final List<String> _gradeLevels = [
-  'Grade 1', 
-  'Grade 2', 
-  'Grade 3', 
-  'Grade 4', 
-  'Grade 5', 
-  'Grade 6'
-];
+Future<void> _deleteClass(int classId) async {
+    try {
+      await Supabase.instance.client.from('class').delete().eq('classid', classId);
+      _fetchMyClasses();
+      _showSnackBar("Class deleted", Colors.grey);
+    } catch (e) {
+      _showSnackBar("Could not delete class", Colors.red);
+    }
+  }
+
 
 //create class
   Future<void> _createNewClass() async {
@@ -71,10 +75,13 @@ final List<String> _gradeLevels = [
         'teacherid': widget.teacherId,
         'classname': _classNameController.text.trim(),
         'classcode': code,
-        'curriculumlevel': _selectedGrade,
+        'curriculumlevel': _curriculumLevel,
       });
 
       _classNameController.clear();
+
+      setState(() => _curriculumLevel = 'Beginner');
+
       _fetchMyClasses(); 
       _showSnackBar("Class Created! Students use code: $code", Colors.green);
     } catch (e) {
@@ -100,9 +107,10 @@ final List<String> _gradeLevels = [
                   const SizedBox(height: 20),
                   TextField(controller: _classNameController, decoration: const InputDecoration(labelText: "Class Name", border: OutlineInputBorder())),
                   const SizedBox(height: 15),
+
                   DropdownButtonFormField<String>(
                     initialValue: _curriculumLevel,
-                    items: ['Beginner', 'Intermediate', 'Advanced'].map((l) => DropdownMenuItem(value: l, child: Text(l))).toList(),
+                    items: _levels.map((l) => DropdownMenuItem(value: l, child: Text(l))).toList(),
                     onChanged: (val) => setState(() => _curriculumLevel = val!),
                     decoration: const InputDecoration(labelText: "Curriculum Level", border: OutlineInputBorder()),
                   ),
@@ -123,7 +131,27 @@ final List<String> _gradeLevels = [
                 return ListTile(
                   title: Text(c['classname']),
                   subtitle: Text("Level: ${c['curriculumlevel']} | Code: ${c['classcode']}"),
-                  trailing: const Icon(Icons.arrow_forward_ios),
+                  trailing: SizedBox(
+                          width: 100, 
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.people_outline, color: Colors.blue),
+                                onPressed: () {
+                                  Navigator.push(context, MaterialPageRoute(builder: (context) => StudentListScreen(
+                                    classId: c['classid'],
+                                    className: c['classname'],
+                                  )));
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                onPressed: () => _deleteClass(c['classid']),
+                              ),
+                            ],
+                          ),
+                        ),
                   onTap: () {Navigator.push(context,
                         MaterialPageRoute(builder: (context) => LessonManagementScreen(
                             classId: c['classid'],
