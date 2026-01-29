@@ -116,45 +116,143 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Teacher Registration")),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            TextField(controller: _fullNameController, decoration: const InputDecoration(labelText: "Full Name", border: OutlineInputBorder())),
-            const SizedBox(height: 15),
-            
-            DropdownButtonFormField<int>(
-              initialValue: _selectedSchoolId,
-              decoration: const InputDecoration(labelText: "Your School", border: OutlineInputBorder()),
-              items: _schools.map((s) => DropdownMenuItem<int>(value: s['schoolid'], child: Text(s['schoolname']))).toList(),
-              onChanged: (val) => setState(() => _selectedSchoolId = val),
-            ),
-            const SizedBox(height: 15),
-
-            TextField(controller: _employeeIdController, decoration: const InputDecoration(labelText: "Employee ID", border: OutlineInputBorder())),
-            const SizedBox(height: 15),
-            TextField(controller: _departmentController, decoration: const InputDecoration(labelText: "Department", border: OutlineInputBorder())),
-            const SizedBox(height: 15),
-
-            TextField(controller: _emailController, decoration: const InputDecoration(labelText: "Email", border: OutlineInputBorder())),
-            const SizedBox(height: 15),
-            TextField(controller: _passwordController, decoration: const InputDecoration(labelText: "Password", border: OutlineInputBorder()), obscureText: true),
-            const SizedBox(height: 15),
-            TextField(controller: _confirmPasswordController, decoration: const InputDecoration(labelText: "Confirm Password", border: OutlineInputBorder()), obscureText: true),
-            const SizedBox(height: 30),
-            
-            _isLoading 
-              ? const CircularProgressIndicator() 
-              : ElevatedButton(
-                  style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
-                  onPressed: _handleRegister, 
-                  child: const Text("Register as Teacher")
-                ),
-          ],
+  return Scaffold(
+    // Extends the background behind the app bar
+    extendBodyBehindAppBar: true, 
+    body: Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+            image: AssetImage("assets/images/background.png"),
+            fit: BoxFit.cover,
         ),
       ),
-    );
-  }
+      child: Center(
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              const SizedBox(height: 60), // Space for top
+              Container(
+                constraints: const BoxConstraints(maxWidth: 400),
+                margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                padding: const EdgeInsets.all(30),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    )
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      "Sign Up",
+                      style: TextStyle(
+                        fontSize: 26, 
+                        fontWeight: FontWeight.bold, 
+                        color: Color(0xFF1D5A71)
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                    
+                    //Input Fields
+                    _buildInputField(_fullNameController, "Full Name"),
+                    const SizedBox(height: 20),
+                    
+                    _buildInputField(_emailController, "Email"),
+                    const SizedBox(height: 20),
+
+                    //Dropdown for school selection
+                    DropdownButtonFormField<int>(
+                      value: _selectedSchoolId,
+                      decoration: const InputDecoration(
+                        labelText: "Select School",
+                        labelStyle: const TextStyle(color: Color(0xFF1D5A71), fontSize: 14, fontWeight: FontWeight.bold),
+                        enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0XFF7AA9CA))),
+                      ),
+                      items: _schools.map((s) => DropdownMenuItem<int>(
+                        value: s['schoolid'], 
+                        child: Text(s['schoolname'])
+                      )).toList(),
+                      onChanged: (val) => setState(() => _selectedSchoolId = val),
+                    ),
+                    const SizedBox(height: 20),
+
+                    _buildInputField(_passwordController, "Password", isObscure: true),
+                    const SizedBox(height: 20),
+                    
+                    _buildInputField(_confirmPasswordController, "Confirm Password", isObscure: true),
+                    const SizedBox(height: 40),
+
+                    // Signup Button
+                    _isLoading
+                        ? const CircularProgressIndicator()
+                        : ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFa5ceeb),
+                              foregroundColor: const Color(0xFF006064),
+                              elevation: 0,
+                              minimumSize: const Size(180, 45),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                            ),
+                            onPressed: _handleRegister,
+                            child: const Text("Sign up", style: TextStyle(fontWeight: FontWeight.bold)),
+                          ),
+                    
+                    const SizedBox(height: 20),
+                    
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text("Already have an account? ",
+                        style: TextStyle(color: Color(0xFF006064),
+                        fontWeight: FontWeight.bold)),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.pop(
+                              context
+                            );
+                          },
+                          child: const Text(
+                            "Login",
+                            style: TextStyle(
+                              color: Color(0xFF006064), 
+                              fontWeight: FontWeight.bold,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ],
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+// Helper to keep the code clean and consistent
+Widget _buildInputField(TextEditingController controller, String label, {bool isObscure = false}) {
+  return TextField(
+    controller: controller,
+    obscureText: isObscure,
+    decoration: InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(color: Color(0xFF1D5A71), fontSize: 14, fontWeight: FontWeight.bold),
+      enabledBorder: const UnderlineInputBorder(
+        borderSide: BorderSide(color: Color(0XFF7AA9CA), width: 1),
+      ),
+    ),
+  );
+}
 }
