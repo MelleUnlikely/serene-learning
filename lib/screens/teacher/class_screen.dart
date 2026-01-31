@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:math';
-import '../teacher/lesson_screen.dart';
-import '../teacher/student_list_screen.dart';  
+import '../teacher/lesson_screen.dart'; 
 
 class CreateClassScreen extends StatefulWidget {
   final int teacherId; // The userID of the teacher
@@ -15,12 +14,9 @@ class CreateClassScreen extends StatefulWidget {
 
 class _CreateClassScreenState extends State<CreateClassScreen> {
   final _classNameController = TextEditingController();
-
   String _curriculumLevel = 'Beginner';
   bool _isLoading = false;
   List<Map<String, dynamic>> _myClasses = [];
-
-  final List<String> _levels = ['Beginner', 'Intermediate', 'Advanced'];
 
   @override
   void initState() {
@@ -30,13 +26,6 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
 
   // Fetch classes
   Future<void> _fetchMyClasses() async {
-
-    final userId = widget.teacherId == 0 
-        ? Supabase.instance.client.auth.currentUser?.id 
-        : widget.teacherId;
-
-    if (userId == null) return;
-    
     final data = await Supabase.instance.client
         .from('class')
         .select()
@@ -49,16 +38,16 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
     return (Random().nextInt(9000) + 1000).toString();
   }
 
-Future<void> _deleteClass(int classId) async {
-    try {
-      await Supabase.instance.client.from('class').delete().eq('classid', classId);
-      _fetchMyClasses();
-      _showSnackBar("Class deleted", Colors.grey);
-    } catch (e) {
-      _showSnackBar("Could not delete class", Colors.red);
-    }
-  }
-
+//curriculum lebels
+final String _selectedGrade = 'Grade 1';
+final List<String> _gradeLevels = [
+  'Grade 1', 
+  'Grade 2', 
+  'Grade 3', 
+  'Grade 4', 
+  'Grade 5', 
+  'Grade 6'
+];
 
 //create class
   Future<void> _createNewClass() async {
@@ -75,13 +64,10 @@ Future<void> _deleteClass(int classId) async {
         'teacherid': widget.teacherId,
         'classname': _classNameController.text.trim(),
         'classcode': code,
-        'curriculumlevel': _curriculumLevel,
+        'curriculumlevel': _selectedGrade,
       });
 
       _classNameController.clear();
-
-      setState(() => _curriculumLevel = 'Beginner');
-
       _fetchMyClasses(); 
       _showSnackBar("Class Created! Students use code: $code", Colors.green);
     } catch (e) {
@@ -93,76 +79,123 @@ Future<void> _deleteClass(int classId) async {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Manage Classes")),
+    return Scaffold( //think header lah. your header.
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0.5, // Thin gray line separator
+        centerTitle: false,
+        title: const Text(
+          "Serene",
+          style: TextStyle(
+            color: Color(0xFF1D5A71), // Dark teal from your reference
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_none, color: Color(0xFF1D4E5F)),
+            onPressed: () {},
+          ),
+          IconButton(
+            icon: const Icon(Icons.menu, color: Color(0xFF1D4E5F)),
+            onPressed: () {},
+          ),
+          const SizedBox(width: 15),
+        ],
+      ),
+      
       body: Row(
         children: [
+          // Left Side: Create New Class Form
           Expanded(
             flex: 1,
             child: Padding(
-              padding: const EdgeInsets.all(24.0),
+              padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 50.0),
               child: Column(
                 children: [
-                  const Text("Create New Class", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 20),
-                  TextField(controller: _classNameController, decoration: const InputDecoration(labelText: "Class Name", border: OutlineInputBorder())),
-                  const SizedBox(height: 15),
-
-                  DropdownButtonFormField<String>(
-                    initialValue: _curriculumLevel,
-                    items: _levels.map((l) => DropdownMenuItem(value: l, child: Text(l))).toList(),
-                    onChanged: (val) => setState(() => _curriculumLevel = val!),
-                    decoration: const InputDecoration(labelText: "Curriculum Level", border: OutlineInputBorder()),
+                  const Text(
+                    "Create New Class",
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 30),
+                  TextField(
+                    controller: _classNameController,
+                    decoration: const InputDecoration(
+                      labelText: "Class Name",
+                      border: OutlineInputBorder(), // Keeping your current style
+                    ),
                   ),
                   const SizedBox(height: 20),
-                  _isLoading ? const CircularProgressIndicator() : ElevatedButton(onPressed: _createNewClass, child: const Text("Create Class")),
+                  DropdownButtonFormField<String>(
+                    initialValue: _curriculumLevel,
+                    decoration: const InputDecoration(
+                      labelText: "Curriculum Level",
+                      border: OutlineInputBorder(),
+                    ),
+                    items: ['Beginner', 'Intermediate', 'Advanced']
+                        .map((l) => DropdownMenuItem(value: l, child: Text(l)))
+                        .toList(),
+                    onChanged: (val) => setState(() => _curriculumLevel = val!),
+                  ),
+                  const SizedBox(height: 30),
+                  _isLoading
+                      ? const CircularProgressIndicator()
+                      : ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFF3E5F5), // Light purple button
+                            foregroundColor: const Color(0xFF7B1FA2),
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+                          ),
+                          onPressed: _createNewClass,
+                          child: const Text("Create Class"),
+                        ),
                 ],
               ),
             ),
           ),
-          const VerticalDivider(),
+          
+          const VerticalDivider(width: 1, thickness: 1, color: Color(0xFF1D5A71)),
 
           Expanded(
             flex: 2,
-            child: ListView.builder(
-              itemCount: _myClasses.length,
-              itemBuilder: (context, index) {
-                final c = _myClasses[index];
-                return ListTile(
-                  title: Text(c['classname']),
-                  subtitle: Text("Level: ${c['curriculumlevel']} | Code: ${c['classcode']}"),
-                  trailing: SizedBox(
-                          width: 100, 
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.people_outline, color: Colors.blue),
-                                onPressed: () {
-                                  Navigator.push(context, MaterialPageRoute(builder: (context) => StudentListScreen(
-                                    classId: c['classid'],
-                                    className: c['classname'],
-                                  )));
-                                },
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete_outline, color: Colors.red),
-                                onPressed: () => _deleteClass(c['classid']),
-                              ),
-                            ],
-                          ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Subsection Title
+                const Padding(
+                  padding: EdgeInsets.only(left: 30, top: 20, bottom: 10),
+                  child: Text(
+                    "Manage Classes",
+                    style: TextStyle(fontSize: 18, color: Colors.black87),
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: _myClasses.length,
+                    itemBuilder: (context, index) {
+                      final c = _myClasses[index];
+                      return ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 30, vertical: 8),
+                        title: Text(
+                          c['classname'],
+                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 17),
                         ),
-                  onTap: () {Navigator.push(context,
-                        MaterialPageRoute(builder: (context) => LessonManagementScreen(
-                            classId: c['classid'],
-                            className: c['classname'],
-                            gradeLevel: c['curriculumlevel'],
-                          ),
+                        subtitle: Text(
+                          "Level: ${c['curriculumlevel']} | Code: ${c['classcode']}",
+                          style: const TextStyle(color: Colors.grey),
                         ),
+                        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                        onTap: () {
+                          // Navigation to LessonManagementScreen
+                        },
                       );
                     },
-                );
-              },
+                  ),
+                ),
+              ],
             ),
           ),
         ],
