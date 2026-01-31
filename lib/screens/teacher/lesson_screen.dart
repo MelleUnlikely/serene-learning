@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../teacher/create_flashcard_screen.dart'; 
+import '../teacher/create_flashcard_screen.dart';
+import '../teacher/quiz_screen.dart';  
 
 class LessonManagementScreen extends StatefulWidget {
   final int classId;
@@ -102,8 +103,25 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
                 child: ListTile(
                   leading: const Icon(Icons.book),
                   title: Text(lesson['lessontitle']),
-                  subtitle: const Text("Manage flashcards"),
-                  trailing: const Icon(Icons.chevron_right),
+                  subtitle: const Text("Manage materials"),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.quiz, color: Colors.orange),
+                        tooltip: 'Generate Quiz',
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => QuizScreen(lessonId: lesson['lessonid']),
+                            ),
+                          );
+                        },
+                      ),
+                      const Icon(Icons.chevron_right),
+                    ],
+                  ),
                   onTap: () {Navigator.push(context,
                         MaterialPageRoute(builder: (context) =>CreateFlashcardScreen (
                             lessonId: lesson['lessonid']

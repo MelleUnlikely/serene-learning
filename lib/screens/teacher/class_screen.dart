@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:math';
-import '../teacher/lesson_screen.dart'; 
+import '../teacher/lesson_screen.dart';
+import '../teacher/student_list_screen.dart';  
 
 class CreateClassScreen extends StatefulWidget {
   final int teacherId; // The userID of the teacher
@@ -14,9 +15,12 @@ class CreateClassScreen extends StatefulWidget {
 
 class _CreateClassScreenState extends State<CreateClassScreen> {
   final _classNameController = TextEditingController();
+
   String _curriculumLevel = 'Beginner';
   bool _isLoading = false;
   List<Map<String, dynamic>> _myClasses = [];
+
+  final List<String> _levels = ['Beginner', 'Intermediate', 'Advanced'];
 
   @override
   void initState() {
@@ -26,6 +30,13 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
 
   // Fetch classes
   Future<void> _fetchMyClasses() async {
+
+    final userId = widget.teacherId == 0 
+        ? Supabase.instance.client.auth.currentUser?.id 
+        : widget.teacherId;
+
+    if (userId == null) return;
+    
     final data = await Supabase.instance.client
         .from('class')
         .select()
@@ -38,16 +49,16 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
     return (Random().nextInt(9000) + 1000).toString();
   }
 
-//curriculum lebels
-final String _selectedGrade = 'Grade 1';
-final List<String> _gradeLevels = [
-  'Grade 1', 
-  'Grade 2', 
-  'Grade 3', 
-  'Grade 4', 
-  'Grade 5', 
-  'Grade 6'
-];
+Future<void> _deleteClass(int classId) async {
+    try {
+      await Supabase.instance.client.from('class').delete().eq('classid', classId);
+      _fetchMyClasses();
+      _showSnackBar("Class deleted", Colors.grey);
+    } catch (e) {
+      _showSnackBar("Could not delete class", Colors.red);
+    }
+  }
+
 
 //create class
   Future<void> _createNewClass() async {
@@ -64,10 +75,13 @@ final List<String> _gradeLevels = [
         'teacherid': widget.teacherId,
         'classname': _classNameController.text.trim(),
         'classcode': code,
-        'curriculumlevel': _selectedGrade,
+        'curriculumlevel': _curriculumLevel,
       });
 
       _classNameController.clear();
+
+      setState(() => _curriculumLevel = 'Beginner');
+
       _fetchMyClasses(); 
       _showSnackBar("Class Created! Students use code: $code", Colors.green);
     } catch (e) {
@@ -127,15 +141,11 @@ final List<String> _gradeLevels = [
                     ),
                   ),
                   const SizedBox(height: 20),
+                  TextField(controller: _classNameController, decoration: const InputDecoration(labelText: "Class Name", border: OutlineInputBorder())),
+                  const SizedBox(height: 15),
                   DropdownButtonFormField<String>(
                     initialValue: _curriculumLevel,
-                    decoration: const InputDecoration(
-                      labelText: "Curriculum Level",
-                      border: OutlineInputBorder(),
-                    ),
-                    items: ['Beginner', 'Intermediate', 'Advanced']
-                        .map((l) => DropdownMenuItem(value: l, child: Text(l)))
-                        .toList(),
+                    items: ['Beginner', 'Intermediate', 'Advanced'].map((l) => DropdownMenuItem(value: l, child: Text(l))).toList(),
                     onChanged: (val) => setState(() => _curriculumLevel = val!),
                   ),
                   const SizedBox(height: 30),
@@ -161,41 +171,25 @@ final List<String> _gradeLevels = [
 
           Expanded(
             flex: 2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Subsection Title
-                const Padding(
-                  padding: EdgeInsets.only(left: 30, top: 20, bottom: 10),
-                  child: Text(
-                    "Manage Classes",
-                    style: TextStyle(fontSize: 18, color: Colors.black87),
-                  ),
-                ),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: _myClasses.length,
-                    itemBuilder: (context, index) {
-                      final c = _myClasses[index];
-                      return ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 30, vertical: 8),
-                        title: Text(
-                          c['classname'],
-                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 17),
+            child: ListView.builder(
+              itemCount: _myClasses.length,
+              itemBuilder: (context, index) {
+                final c = _myClasses[index];
+                return ListTile(
+                  title: Text(c['classname']),
+                  subtitle: Text("Level: ${c['curriculumlevel']} | Code: ${c['classcode']}"),
+                  trailing: const Icon(Icons.arrow_forward_ios),
+                  onTap: () {Navigator.push(context,
+                        MaterialPageRoute(builder: (context) => LessonManagementScreen(
+                            classId: c['classid'],
+                            className: c['classname'],
+                            gradeLevel: c['curriculumlevel'],
+                          ),
                         ),
-                        subtitle: Text(
-                          "Level: ${c['curriculumlevel']} | Code: ${c['classcode']}",
-                          style: const TextStyle(color: Colors.grey),
-                        ),
-                        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                        onTap: () {
-                          // Navigation to LessonManagementScreen
-                        },
                       );
                     },
-                  ),
-                ),
-              ],
+                );
+              },
             ),
           ),
         ],
