@@ -65,67 +65,120 @@ Future<void> _handleLogin() async {
         ),
         child: Center(
           child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              // --- THIS IS THE "BOX" FOR YOUR CONTENTS ---
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 400), // Perfect for Web!
-                padding: const EdgeInsets.all(30),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9), // Makes the box stand out
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withAlpha(25),
-                      blurRadius: 20,
-                      spreadRadius: 5,
-                    )
-                  ],
+            child: Column(
+              children: [
+                //logo muna
+                Image.asset(
+                  "assets/images/logo.png",
+                  height: 200,
+                  fit: BoxFit.contain,
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min, // Shrinks box to fit content
-                  children: [
-                    const Text(
-                      "Welcome Back",
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 30),
-                    TextField(
-                      controller: _emailController, 
-                      decoration: const InputDecoration(labelText: "Email", border: OutlineInputBorder()),
-                    ),
-                    const SizedBox(height: 15),
-                    TextField(
-                      controller: _passwordController, 
-                      decoration: const InputDecoration(labelText: "Password", border: OutlineInputBorder()), 
-                      obscureText: true,
-                    ),
-                    const SizedBox(height: 30),
-                    
-                    _isLoading 
-                      ? const CircularProgressIndicator() 
-                      : ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            minimumSize: const Size(double.infinity, 50), // Full width button
-                          ),
-                          onPressed: _handleLogin, 
-                          child: const Text("Login"),
+                const SizedBox(height: 25),//parang gap
+                
+                //lalagyan nila username + password + sign up
+                Container(
+                  constraints: const BoxConstraints(maxWidth: 350),
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 50),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.95),
+                    borderRadius: BorderRadius.circular(30), //corner
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.blueGrey.withOpacity(0.1),
+                        blurRadius: 15,
+                        offset: const Offset(0, 10),
+                      )
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        "Login",
+                        style: TextStyle(
+                          fontSize: 28, 
+                          fontWeight: FontWeight.w600, 
+                          color: Color(0xFF1D5A71)
                         ),
-                    
-                    const SizedBox(height: 20),
+                      ),
+                      const SizedBox(height: 40),
+                      
+                      //for username field
+                      TextField(
+                        controller: _emailController,
+                        decoration: const InputDecoration(
+                          labelText: "Username",
+                          labelStyle: TextStyle(color: Color(0xFF1D5A71), fontWeight: FontWeight.bold),
+                          enabledBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(color: Color(0XFF7AA9CA), width: 1),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 25),
+                      
+                      //for password na field
+                      TextField(
+                        controller: _passwordController,
+                        obscureText: true,
+                        decoration: const InputDecoration(
+                          labelText: "Password",
+                          labelStyle: TextStyle(color: Color(0xFF1D5A71), fontWeight: FontWeight.bold),
+                          enabledBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(color: Color(0XFF7AA9CA), width: 1),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 40),
 
-                    TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const RegistrationScreen()),
-                        );
-                      },
-                      child: const Text("Don't have an account? Sign Up"),
-                    )
-                  ],
+                      //login button
+                      _isLoading
+                          ? const CircularProgressIndicator()
+                          : ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFa5ceeb),
+                                foregroundColor: const Color(0xFF006064),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                minimumSize: const Size(200, 45),
+                              ),
+                              onPressed: _handleLogin,
+                              child: const Text("Login",
+                              style: TextStyle(fontWeight: FontWeight.bold)),
+                            ),
+                      
+                      const SizedBox(height: 40),
+
+                      //for sign up
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text("Don't have account? ",
+                          style: TextStyle(color: Color(0xFF006064),
+                          fontWeight: FontWeight.bold)),
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const RegistrationScreen()),
+                              );
+                            },
+                            child: const Text(
+                              "Sign up",
+                              style: TextStyle(
+                                color: Color(0xFF006064), 
+                                fontWeight: FontWeight.bold,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         ),
