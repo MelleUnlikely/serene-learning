@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../teacher/create_flashcard_screen.dart';
 import '../teacher/quiz_screen.dart';  
+import 'package:flutter_application_1/widgets/serene_menu.dart';
 
 class LessonManagementScreen extends StatefulWidget {
   final int classId;
@@ -20,6 +21,8 @@ class LessonManagementScreen extends StatefulWidget {
 }
 
 class _LessonManagementScreenState extends State<LessonManagementScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldkey = GlobalKey<ScaffoldState>();
+
   List<Map<String, dynamic>> _lessons = [];
   bool _isLoading = false;
 
@@ -90,7 +93,11 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      key: _scaffoldkey,
+      endDrawer: const SereneDrawer(),
       appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: const BackButton(color: Color(0xFF1D5A71)),
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
@@ -109,7 +116,9 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.menu, color: Color(0xFF1D4E5F)),
-            onPressed: () {},
+            onPressed: () {
+              _scaffoldkey.currentState?.openEndDrawer();
+            },
           ),
           const SizedBox(width: 15),
         ],
@@ -177,7 +186,7 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       IconButton(
-                                        icon: const Icon(Icons.quiz, color:Color(0xFFd97126)),
+                                        icon: const Icon(Icons.quiz, color:Colors.white),
                                         tooltip: 'Generate Quiz',
                                         onPressed: () {
                                           Navigator.push(
