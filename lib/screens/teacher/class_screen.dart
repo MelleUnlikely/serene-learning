@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/serene_menu.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:math';
 import '../teacher/lesson_screen.dart';
@@ -15,6 +16,7 @@ class CreateClassScreen extends StatefulWidget {
 
 class _CreateClassScreenState extends State<CreateClassScreen> {
   final _classNameController = TextEditingController();
+  final GlobalKey<ScaffoldState> _scaffoldkey = GlobalKey<ScaffoldState>();
 
   String _curriculumLevel = 'Beginner';
   bool _isLoading = false;
@@ -60,7 +62,7 @@ Future<void> _deleteClass(int classId) async {
   }
 
 
-//create class
+  //create class
   Future<void> _createNewClass() async {
     if (_classNameController.text.isEmpty) {
       _showSnackBar("Please enter a class name", Colors.orange);
@@ -95,7 +97,10 @@ Future<void> _deleteClass(int classId) async {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      key: _scaffoldkey,
+      endDrawer: const SereneDrawer(),
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
@@ -114,7 +119,9 @@ Future<void> _deleteClass(int classId) async {
           ),
           IconButton(
             icon: const Icon(Icons.menu, color: Color(0xFF1D4E5F)),
-            onPressed: () {},
+            onPressed: () {
+              _scaffoldkey.currentState?.openEndDrawer();
+            },
           ),
           const SizedBox(width: 15),
         ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_application_1/widgets/serene_menu.dart';
 
 class QuizScreen extends StatefulWidget {
   final int lessonId;
@@ -11,6 +12,7 @@ class QuizScreen extends StatefulWidget {
 
 class _QuizScreenState extends State<QuizScreen> {
   final supabase = Supabase.instance.client;
+  final GlobalKey<ScaffoldState> _scaffoldkey = GlobalKey<ScaffoldState>();
 
   bool _isLoading = true;
   bool _isGenerating = false;
@@ -138,7 +140,11 @@ Future<void> _saveGeneratedQuiz(List<Map<String, dynamic>> quizData) async {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      key: _scaffoldkey,
+      endDrawer: const SereneDrawer(),
       appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: const BackButton(color: Color(0xFF1D5A71)),
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
@@ -151,14 +157,24 @@ Future<void> _saveGeneratedQuiz(List<Map<String, dynamic>> quizData) async {
           ),
         ),
         actions: [
-          IconButton(icon: const Icon(Icons.notifications_none, color: Color(0xFF1D4E5F)), onPressed: () {}),
-          IconButton(icon: const Icon(Icons.menu, color: Color(0xFF1D4E5F)), onPressed: () {}),
+          IconButton(
+            icon: const Icon(Icons.notifications_none, color: Color(0xFF1D4E5F)),
+            onPressed: () {},
+          ),
+          IconButton(
+            icon: const Icon(Icons.menu, color: Color(0xFF1D4E5F)),
+            onPressed: () {
+              _scaffoldkey.currentState?.openEndDrawer();
+            },
+          ),
           const SizedBox(width: 15),
         ],
         bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(1.0),
-            child: Container(color: const Color(0xFF1D5A71),
-              height: 1.0)),
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(
+            color: Color(0xFF1D5A71),
+            height: 1.0,
+          )),
       ),
 
       body: _isLoading 

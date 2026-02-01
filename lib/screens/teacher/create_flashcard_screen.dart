@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../upload_service.dart';
+import 'package:flutter_application_1/widgets/serene_menu.dart';
 
 class CreateFlashcardScreen extends StatefulWidget {
   final int lessonId; 
@@ -12,6 +13,8 @@ class CreateFlashcardScreen extends StatefulWidget {
 
 class _CreateFlashcardScreenState extends State<CreateFlashcardScreen> {
   final _meaningController = TextEditingController();
+  final GlobalKey<ScaffoldState> _scaffoldkey = GlobalKey<ScaffoldState>();
+
   String? _uploadedImgUrl;
   String? _uploadedVideoUrl;
   bool _isUploading = false;
@@ -63,7 +66,11 @@ double _uploadProgress = 0;
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      key: _scaffoldkey,
+      endDrawer: const SereneDrawer(),
       appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: const BackButton(color: Color(0xFF1D5A71)),
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
@@ -76,14 +83,24 @@ double _uploadProgress = 0;
           ),
         ),
         actions: [
-          IconButton(icon: const Icon(Icons.notifications_none, color: Color(0xFF1D4E5F)), onPressed: () {}),
-          IconButton(icon: const Icon(Icons.menu, color: Color(0xFF1D4E5F)), onPressed: () {}),
+          IconButton(
+            icon: const Icon(Icons.notifications_none, color: Color(0xFF1D4E5F)),
+            onPressed: () {},
+          ),
+          IconButton(
+            icon: const Icon(Icons.menu, color: Color(0xFF1D4E5F)),
+            onPressed: () {
+              _scaffoldkey.currentState?.openEndDrawer();
+            },
+          ),
           const SizedBox(width: 15),
         ],
         bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(1.0),
-            child: Container(color: const Color(0xFF1D5A71),
-              height: 1.0)),
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(
+            color: Color(0xFF1D5A71),
+            height: 1.0,
+          )),
       ),
 
       body: Column(
