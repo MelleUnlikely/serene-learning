@@ -151,7 +151,20 @@ Future<void> _deleteClass(int classId) async {
                     decoration: const InputDecoration(labelText: "Curriculum Level", border: OutlineInputBorder()),
                   ),
                   const SizedBox(height: 20),
-                  _isLoading ? const CircularProgressIndicator() : ElevatedButton(onPressed: _createNewClass, child: const Text("Create Class")),
+                  _isLoading ? const CircularProgressIndicator() :
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFa5ceeb),
+                        foregroundColor: const Color(0xFF006064),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        minimumSize: const Size(200, 45),
+                      ),
+                      onPressed: _createNewClass,
+                      child: const Text("Create Class", 
+                        style: TextStyle(color: Color(0xFF1D5A71)))),
                 ],
               ),
             ),

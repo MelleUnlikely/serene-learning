@@ -137,6 +137,7 @@ Future<void> _saveGeneratedQuiz(List<Map<String, dynamic>> quizData) async {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(title: Text(_existingQuizId == null ? "Generate Quiz" : "Manage Quiz")),
       body: _isLoading 
         ? const Center(child: CircularProgressIndicator())

@@ -62,7 +62,10 @@ double _uploadProgress = 0;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Manage Cards - Lesson #${widget.lessonId}")),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        title: Text("Manage Cards - Lesson #${widget.lessonId}")),
       body: Column(
         children: [
           // Input Fields
