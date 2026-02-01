@@ -89,54 +89,151 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text("${widget.className} - ${widget.gradeLevel}"),
-      ),
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator())
-        : ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: _lessons.length,
-            itemBuilder: (context, index) {
-              final lesson = _lessons[index];
-              return Card(
-                child: ListTile(
-                  leading: const Icon(Icons.book),
-                  title: Text(lesson['lessontitle']),
-                  subtitle: const Text("Manage materials"),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.quiz, color: Colors.orange),
-                        tooltip: 'Generate Quiz',
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => QuizScreen(lessonId: lesson['lessonid']),
-                            ),
-                          );
-                        },
-                      ),
-                      const Icon(Icons.chevron_right),
-                    ],
-                  ),
-                  onTap: () {Navigator.push(context,
-                        MaterialPageRoute(builder: (context) =>CreateFlashcardScreen (
-                            lessonId: lesson['lessonid']
-                          ),
-                        ),
-                      );
-                    },
-                ),
-              );
-            },
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: false,
+        title: const Text(
+          "Serene",
+          style: TextStyle(
+            color: Color(0xFF1D5A71),
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
           ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_none, color: Color(0xFF1D4E5F)),
+            onPressed: () {},
+          ),
+          IconButton(
+            icon: const Icon(Icons.menu, color: Color(0xFF1D4E5F)),
+            onPressed: () {},
+          ),
+          const SizedBox(width: 15),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(
+            color: Color(0xFF1D5A71),
+            height: 1.0,
+          )),
+      ),
+
+      body: Row(
+        children: [
+          //for the sidebar
+          Container(
+            width: 250,
+            decoration: const BoxDecoration(
+              border: Border(right: BorderSide(color: Color(0xFF1D5A71), 
+                width: 1.0)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 20),
+                _buildSidebarItem("Upload Lesson", isSelected: true),
+                _buildSidebarItem("Student's Performance", isSelected: false),
+              ],
+            ),
+          ),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                //"parang title" to see which class is currently being "edited/viewed"
+                Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Text(
+                    "${widget.className} - ${widget.gradeLevel}",
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1D5A71),
+                    ),
+                  ),
+                ),
+                
+                Expanded(
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: _lessons.length,
+                            itemBuilder: (context, index) {
+                              final lesson = _lessons[index];
+                              return Card(
+                                color: Color(0xFFa5ceeb), 
+                                child: ListTile(
+                                  leading: const Icon(Icons.book, color: Color(0XFF1d5a71)), //icon for the lesson
+                                  title: Text(lesson['lessontitle'],
+                                    style: TextStyle(color: Color(0xFF1D5A71), fontWeight: FontWeight.bold),),
+                                  subtitle: const Text("Manage materials",
+                                    style: TextStyle(color: Color(0xFF1D5A71))),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.quiz, color:Color(0xFFd97126)),
+                                        tooltip: 'Generate Quiz',
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => QuizScreen(lessonId: lesson['lessonid']),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                      const Icon(Icons.chevron_right, color: Color(0XFF1d5a71)),
+                                    ],
+                                  ),
+                                  onTap: () {Navigator.push(context,
+                                        MaterialPageRoute(builder: (context) =>CreateFlashcardScreen (
+                                            lessonId: lesson['lessonid']
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                ),
+                              );
+                            },
+                          ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showCreateLessonDialog,
-        label: const Text("Add Lesson"),
-        icon: const Icon(Icons.add),
+        label: const Text("Add Lesson",
+          style: TextStyle(color: Color(0xFF1D5A71))),
+        icon: const Icon(Icons.add, color: Color(0XFF1d5a71)),
+        backgroundColor: const Color(0xFFa5ceeb),
+      ),
+    );
+  }
+
+  // Helper widget to keep the sidebar code clean
+  Widget _buildSidebarItem(String title, {bool isSelected = false}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+      decoration: BoxDecoration(
+        border: isSelected 
+          ? const Border(left: BorderSide(color: Color(0xFF1D5A71), width: 5)) 
+          : null,
+      ),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: isSelected ? const Color(0xFF1D5A71) : Colors.black54,
+        ),
       ),
     );
   }
