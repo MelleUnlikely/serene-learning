@@ -65,9 +65,42 @@ double _uploadProgress = 0;
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
-        title: Text("Manage Cards - Lesson #${widget.lessonId}")),
+        elevation: 0,
+        centerTitle: false,
+        title: const Text(
+          "Serene",
+          style: TextStyle(
+            color: Color(0xFF1D5A71),
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+          ),
+        ),
+        actions: [
+          IconButton(icon: const Icon(Icons.notifications_none, color: Color(0xFF1D4E5F)), onPressed: () {}),
+          IconButton(icon: const Icon(Icons.menu, color: Color(0xFF1D4E5F)), onPressed: () {}),
+          const SizedBox(width: 15),
+        ],
+        bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1.0),
+            child: Container(color: const Color(0xFF1D5A71),
+              height: 1.0)),
+      ),
+
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+            child: Text(
+              "Manage Cards - Lesson #${widget.lessonId}",
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1D5A71),
+              ),
+            ),
+          ),
+
           // Input Fields
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -110,10 +143,12 @@ double _uploadProgress = 0;
             Text("${(_uploadProgress * 100).toInt()}% Uploading... Please wait."),
           ],
         ),
-          const Divider(thickness: 2),
+          const Divider(thickness: 1, color: Color(0xFF1D5A71)),
+
           const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8.0),
-            child: Text("Current Cards in this Lesson", style: TextStyle(fontWeight: FontWeight.bold)),
+            padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+            child: Text("Current Cards in this Lesson",
+              style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1D5A71))),
           ),
 
           // Existing cards

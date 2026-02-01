@@ -138,14 +138,54 @@ Future<void> _saveGeneratedQuiz(List<Map<String, dynamic>> quizData) async {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(title: Text(_existingQuizId == null ? "Generate Quiz" : "Manage Quiz")),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: false,
+        title: const Text(
+          "Serene",
+          style: TextStyle(
+            color: Color(0xFF1D5A71),
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+          ),
+        ),
+        actions: [
+          IconButton(icon: const Icon(Icons.notifications_none, color: Color(0xFF1D4E5F)), onPressed: () {}),
+          IconButton(icon: const Icon(Icons.menu, color: Color(0xFF1D4E5F)), onPressed: () {}),
+          const SizedBox(width: 15),
+        ],
+        bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1.0),
+            child: Container(color: const Color(0xFF1D5A71),
+              height: 1.0)),
+      ),
+
       body: _isLoading 
-        ? const Center(child: CircularProgressIndicator())
-        : _existingQuizId == null 
-            ? _buildGenerateView() 
-            : _buildManageView(),
-    );
-  }
+      ? const Center(child: CircularProgressIndicator())
+      : Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
+              child: Text(
+                _existingQuizId == null ? "Generate Quiz" : "Manage Quiz",
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1D5A71),
+                ),
+              ),
+            ),
+            Expanded(
+              child: _existingQuizId == null 
+                ? _buildGenerateView() 
+                : _buildManageView(),
+            ),
+          ],
+        ),
+  );
+}
 
   Widget _buildGenerateView() {
     if (_tempQuizData.isEmpty) {
@@ -272,7 +312,9 @@ Widget _buildManageView() {
               },
             ),
       ),
-      const Divider(),
+
+      const Divider(thickness: 1, color: Color(0xFF1D5A71)), //divider
+      
       Padding(
         padding: const EdgeInsets.only(bottom: 20),
         child: TextButton.icon(

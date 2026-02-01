@@ -177,7 +177,7 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       IconButton(
-                                        icon: const Icon(Icons.quiz, color:Color(0xFFd97126)),
+                                        icon: const Icon(Icons.quiz, color:Colors.white),
                                         tooltip: 'Generate Quiz',
                                         onPressed: () {
                                           Navigator.push(
