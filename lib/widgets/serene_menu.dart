@@ -1,7 +1,50 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SereneDrawer extends StatelessWidget {
   const SereneDrawer({super.key});
+
+  Future<void> _handleLogout(BuildContext context) async {
+    final supabase = Supabase.instance.client;
+
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Logout"),
+        content: const Text("Are you sure you want to sign out?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Logout", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await supabase.auth.signOut();
+
+        if (context.mounted) {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/login',
+            (route) => false,
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Error logging out: $e"), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +79,7 @@ class SereneDrawer extends StatelessWidget {
           _buildMenuItem(Icons.notifications_none, "Notifications", () {}),
           const Divider(indent: 20, endIndent: 20, thickness: 1, color: Color(0xFF1D5A71)),
           _buildMenuItem(Icons.help_outline, "About", () {}),
-          _buildMenuItem(Icons.logout, "Logout", () {}),
+          _buildMenuItem(Icons.logout, "Logout", () => _handleLogout(context)),
         ],
       ),
     );
