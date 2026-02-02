@@ -17,17 +17,23 @@ class _QuizScreenState extends State<QuizScreen> {
   bool _isLoading = true;
   bool _isGenerating = false;
   int? _existingQuizId;
+  
+  int _maxAttempts = 3; 
+  String _selectedPolicy = 'average';
+  final List<String> _policies = ['average', 'highest', 'latest'];
+
   List<Map<String, dynamic>> _studentResults = [];
   List<Map<String, dynamic>> _tempQuizData = [];
   List<dynamic> _allFlashcardsFromDB = [];
 
+  
   @override
   void initState() {
     super.initState();
     _loadInitialData();
   }
 
-  Future<void> _loadInitialData() async {
+Future<void> _loadInitialData() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
 
@@ -41,8 +47,11 @@ class _QuizScreenState extends State<QuizScreen> {
       if (quiz != null) {
         _existingQuizId = quiz['quizid'];
 
-        // Updated: Join with 'profiles' using 'fullname' 
-        // Ensure 'studentid' is the FK in quiz_results pointing to profiles(uid)
+        setState(() {
+          _maxAttempts = quiz['max_attempts'] ?? 3;
+          _selectedPolicy = quiz['grading_policy'] ?? 'average';
+        });
+
         final resultData = await supabase
             .from('quiz_results')
             .select('score, completed_at, profiles!inner(fullname)') 
@@ -65,6 +74,81 @@ class _QuizScreenState extends State<QuizScreen> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
+  Widget _buildQuizSettings() {
+  return Card(
+    elevation: 0,
+    shape: RoundedRectangleBorder(
+      side: const BorderSide(color: Color(0xFF1D5A71), width: 1),
+      borderRadius: BorderRadius.circular(12),
+    ),
+    margin: const EdgeInsets.all(16),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.settings_suggest, color: Color(0xFF1D5A71)),
+              SizedBox(width: 8),
+              Text(
+                "Quiz Configuration",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1D5A71)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              // Dynamic Attempt Selection
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("Max Attempts", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    DropdownButton<int>(
+                      isExpanded: true,
+                      value: _maxAttempts,
+                      items: [1, 2, 3, 5, 10, 99].map((int value) {
+                        return DropdownMenuItem<int>(
+                          value: value, 
+                          child: Text(value == 99 ? "Unlimited" : "$value Attempts")
+                        );
+                      }).toList(),
+                      onChanged: (val) => setState(() => _maxAttempts = val!),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 20),
+              // Dynamic Policy Selection
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("Grading Policy", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    DropdownButton<String>(
+                      isExpanded: true,
+                      value: _selectedPolicy,
+                      items: _policies.map((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value[0].toUpperCase() + value.substring(1)),
+                        );
+                      }).toList(),
+                      onChanged: (val) => setState(() => _selectedPolicy = val!),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
+}
 
   List<Map<String, dynamic>> generateAutoQuiz(List<dynamic> flashcards, int numItems) {
     List<dynamic> copy = List.from(flashcards);
@@ -93,41 +177,43 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
 Future<void> _saveGeneratedQuiz(List<Map<String, dynamic>> quizData) async {
-    setState(() => _isGenerating = true);
-    try {
-      final quizRecord = await supabase.from('quiz').insert({
-        'lessonid': widget.lessonId,
-        'dategenerated': DateTime.now().toIso8601String(),
+  setState(() => _isGenerating = true);
+  try {
+    // This uses the exact _maxAttempts and _selectedPolicy from the UI state
+    final quizRecord = await supabase.from('quiz').insert({
+      'lessonid': widget.lessonId,
+      'dategenerated': DateTime.now().toIso8601String(),
+      'max_attempts': _maxAttempts,     // Teacher's Choice
+      'grading_policy': _selectedPolicy, // Teacher's Choice
+    }).select().single();
+
+    final int quizId = quizRecord['quizid'];
+
+    for (var item in quizData) {
+      final qRecord = await supabase.from('quizquestion').insert({
+        'quizid': quizId,
+        'flashcardid': item['flashcardid'],
       }).select().single();
 
-      final int quizId = quizRecord['quizid'];
+      final choices = item['choices'].map((url) => {
+        'questionid': qRecord['questionid'],
+        'choicetext': url,
+        'iscorrect': url == item['answer'],
+      }).toList();
 
-      for (var item in quizData) {
-        final qRecord = await supabase.from('quizquestion').insert({
-          'quizid': quizId,
-          'flashcardid': item['flashcardid'],
-        }).select().single();
-
-        final choices = item['choices'].map((url) => {
-          'questionid': qRecord['questionid'],
-          'choicetext': url,
-          'iscorrect': url == item['answer'],
-        }).toList();
-
-        await supabase.from('questionchoice').insert(choices);
-      }
-      
-      _showSnackBar("Quiz Published!", Colors.green);
-      
-      await _loadInitialData(); 
-      
-    } catch (e) {
-      debugPrint("❌ Save Error: $e");
-      _showSnackBar("Error: A quiz might already exist for this lesson.", Colors.red);
-    } finally {
-      if (mounted) setState(() => _isGenerating = false);
+      await supabase.from('questionchoice').insert(choices);
     }
+    
+    _showSnackBar("Quiz Published! Policy: $_selectedPolicy", Colors.green);
+    await _loadInitialData(); 
+    
+  } catch (e) {
+    debugPrint("❌ Save Error: $e");
+    _showSnackBar("Failed to publish quiz settings.", Colors.red);
+  } finally {
+    if (mounted) setState(() => _isGenerating = false);
   }
+}
 
   void _showSnackBar(String message, Color color) {
     if (!mounted) return;
@@ -203,8 +289,9 @@ Future<void> _saveGeneratedQuiz(List<Map<String, dynamic>> quizData) async {
   );
 }
 
-  Widget _buildGenerateView() {
+Widget _buildGenerateView() {
     if (_tempQuizData.isEmpty) {
+
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -217,24 +304,20 @@ Future<void> _saveGeneratedQuiz(List<Map<String, dynamic>> quizData) async {
               icon: const Icon(Icons.auto_awesome),
               label: const Text("Generate Preview"),
               onPressed: () async {
-                setState(() => _isLoading = true);
-                try {
-                  final data = await supabase.from('flashcard').select().eq('lessonid', widget.lessonId);
-                  debugPrint("Fetched ${data.length} flashcards.");
-
-                  if (data.isEmpty) {
-                    _showSnackBar("Add flashcards to this lesson first!", Colors.orange);
-                  } else {
-                    setState(() {
-                      _allFlashcardsFromDB = data;
-                      _tempQuizData = generateAutoQuiz(data, data.length);
-                    });
-                  }
-                } catch (e) {
-                  _showSnackBar("Error fetching cards: $e", Colors.red);
-                } finally {
-                  setState(() => _isLoading = false);
-                }
+                 setState(() => _isLoading = true);
+                 try {
+                   final data = await supabase.from('flashcard').select().eq('lessonid', widget.lessonId);
+                   if (data.isEmpty) {
+                     _showSnackBar("Add flashcards to this lesson first!", Colors.orange);
+                   } else {
+                     setState(() {
+                       _allFlashcardsFromDB = data;
+                       _tempQuizData = generateAutoQuiz(data, data.length);
+                     });
+                   }
+                 } finally {
+                   setState(() => _isLoading = false);
+                 }
               },
             ),
           ],
@@ -244,36 +327,32 @@ Future<void> _saveGeneratedQuiz(List<Map<String, dynamic>> quizData) async {
 
     return Column(
       children: [
+        _buildQuizSettings(), 
         Expanded(
           child: ListView.builder(
             itemCount: _tempQuizData.length,
             itemBuilder: (context, index) {
               final q = _tempQuizData[index];
               return Card(
-                margin: const EdgeInsets.all(10),
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Column(
                   children: [
                     ListTile(title: Text("Question ${index + 1}: ${q['meaning']}")),
-                    const Icon(Icons.play_circle_fill, size: 40, color: Colors.blue),
-                    const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: q['choices'].map<Widget>((url) => Padding(
                         padding: const EdgeInsets.all(4.0),
-                        child: Container(
-                          decoration: BoxDecoration(border: Border.all(color: url == q['answer'] ? Colors.green : Colors.grey)),
-                          child: Image.network(url, width: 60, height: 60, fit: BoxFit.cover),
-                        ),
+                        child: Image.network(url, width: 40, height: 40, fit: BoxFit.cover),
                       )).toList(),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                   ],
                 ),
               );
             },
           ),
         ),
-        Padding(
+Padding(
           padding: const EdgeInsets.all(16.0),
           child: SizedBox(
             width: double.infinity,
@@ -294,42 +373,50 @@ Widget _buildManageView() {
     children: [
       Container(
         padding: const EdgeInsets.all(16),
-        color: Colors.blue.withOpacity(0.1),
-        child: const Row(
+        color: const Color(0xFF1D5A71).withOpacity(0.1),
+        child: Column(
           children: [
-            Icon(Icons.info_outline, color: Colors.blue),
-            SizedBox(width: 8),
-            Expanded(child: Text("Students can see this quiz. Below are their current scores.")),
+            Row(
+              children: [
+                const Icon(Icons.settings, color: Color(0xFF1D5A71)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    "Current Policy: ${_selectedPolicy.toUpperCase()}\nMax Attempts: ${_maxAttempts == 99 ? 'Unlimited' : _maxAttempts}",
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit, color: Color(0xFF1D5A71)),
+                  onPressed: () => _showUpdateSettingsDialog(),
+                  tooltip: "Change Quiz Rules",
+                )
+              ],
+            ),
           ],
         ),
       ),
+
       Expanded(
         child: _studentResults.isEmpty
-          ? const Center(child: Text("No students have taken this quiz yet."))
-          : ListView.builder(
-              itemCount: _studentResults.length,
-              itemBuilder: (context, index) {
-                final res = _studentResults[index];
-                // Updated: Match the 'fullname' column name
-                final profile = res['profiles'];
-                final name = profile != null ? profile['fullname'] : "Unknown Student";
-                
-                return ListTile(
-                  leading: CircleAvatar(
-                    child: Text(name.isNotEmpty ? name[0].toUpperCase() : "?"),
-                  ),
-                  title: Text(name),
-                  subtitle: Text("Completed: ${res['completed_at'].toString().substring(0, 10)}"),
-                  trailing: Text(
-                    "${res['score']}%", 
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.blue)
-                  ),
-                );
-              },
-            ),
+            ? const Center(child: Text("No students have taken this quiz yet."))
+            : ListView.builder(
+                itemCount: _studentResults.length,
+                itemBuilder: (context, index) {
+                  final res = _studentResults[index];
+                  final profile = res['profiles'];
+                  final name = profile != null ? profile['fullname'] : "Unknown Student";
+                  return ListTile(
+                    title: Text(name),
+                    subtitle: Text("Completed: ${res['completed_at'].toString().substring(0, 10)}"),
+                    trailing: Text("${res['score']}%", 
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1D5A71))),
+                  );
+                },
+              ),
       ),
 
-      const Divider(thickness: 1, color: Color(0xFF1D5A71)), //divider
+      const Divider(thickness: 1, color: Color(0xFF1D5A71)),
       
       Padding(
         padding: const EdgeInsets.only(bottom: 20),
@@ -367,4 +454,56 @@ Widget _buildManageView() {
   );
 }
 
+void _showUpdateSettingsDialog() {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text("Update Quiz Rules"),
+      content: StatefulBuilder(
+        builder: (context, setDialogState) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButton<int>(
+                isExpanded: true,
+                value: _maxAttempts,
+                onChanged: (val) => setDialogState(() => _maxAttempts = val!),
+                items: [1, 2, 3, 5, 10, 99].map((int value) {
+                  return DropdownMenuItem<int>(value: value, child: Text("$value Attempts"));
+                }).toList(),
+              ),
+              DropdownButton<String>(
+                isExpanded: true,
+                value: _selectedPolicy,
+                onChanged: (val) => setDialogState(() => _selectedPolicy = val!),
+                items: _policies.map((String value) {
+                  return DropdownMenuItem<String>(value: value, child: Text(value.toUpperCase()));
+                }).toList(),
+              ),
+            ],
+          );
+        }
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+        ElevatedButton(
+          onPressed: () async {
+            try {
+              await supabase.from('quiz').update({
+                'max_attempts': _maxAttempts,
+                'grading_policy': _selectedPolicy,
+              }).eq('quizid', _existingQuizId!);
+              Navigator.pop(context);
+              setState(() {});
+              _showSnackBar("Settings updated!", Colors.green);
+            } catch (e) {
+              _showSnackBar("Update failed", Colors.red);
+            }
+          },
+          child: const Text("Save Changes"),
+        )
+      ],
+    ),
+  );
+}
 }
