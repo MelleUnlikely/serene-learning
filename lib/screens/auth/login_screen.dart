@@ -70,7 +70,7 @@ Future<void> _handleLogin() async {
                 //logo muna
                 Image.asset(
                   "assets/images/logo.png",
-                  height: 200,
+                  height: 150,
                   fit: BoxFit.contain,
                 ),
                 const SizedBox(height: 25),//parang gap
