@@ -216,9 +216,40 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
                                         },
                                       ),
                                       IconButton(
-                                        icon: const Icon(Icons.delete_outline, color: Colors.red),
-                                        onPressed: () => _deleteClass(c['classid']),
-                                      ),
+                                      icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                      onPressed: () {
+                                        // Trigger the confirmation dialog
+                                        showDialog(
+                                          context: context,
+                                          builder: (BuildContext context) {
+                                            return AlertDialog(
+                                              title: const Text("Delete Class?"),
+                                              content: const Text(
+                                                "This action cannot be undone. All lessons and student enrollments linked to this class will be permanently deleted.",
+                                              ),
+                                              actions: [
+                                                // Cancel Button
+                                                TextButton(
+                                                  onPressed: () => Navigator.pop(context),
+                                                  child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+                                                ),
+                                                // Confirm Delete Button
+                                                TextButton(
+                                                  onPressed: () {
+                                                    Navigator.pop(context);
+                                                    _deleteClass(c['classid']); 
+                                                  },
+                                                  child: const Text(
+                                                    "Delete",
+                                                    style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                                                  ),
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        );
+                                      },
+                                    ),
                                     ],
                                   ),
                                 ),
