@@ -76,7 +76,6 @@ class SereneDrawer extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           _buildMenuItem(Icons.person_outline, "Account", () {}),
-          _buildMenuItem(Icons.notifications_none, "Notifications", () {}),
           const Divider(indent: 20, endIndent: 20, thickness: 1, color: Color(0xFF1D5A71)),
           _buildMenuItem(Icons.help_outline, "About", () {}),
           _buildMenuItem(Icons.logout, "Logout", () => _handleLogout(context)),

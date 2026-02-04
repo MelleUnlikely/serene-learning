@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/widgets/serene_menu.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:math';
-import '../teacher/lesson_screen.dart';
+import '../teacher/teacher_dashboard.dart';
 import '../teacher/student_list_screen.dart';  
 
 class CreateClassScreen extends StatefulWidget {
@@ -221,13 +221,16 @@ Future<void> _deleteClass(int classId) async {
                                     ],
                                   ),
                                 ),
-                            onTap: () {Navigator.push(context,
-                              MaterialPageRoute(builder: (context) => LessonManagementScreen(
-                                  classId: c['classid'],
-                                  className: c['classname'],
-                                  gradeLevel: c['curriculumlevel'],
+                            onTap: () {
+                             Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => TeacherDashboard(
+                                    classId: c['classid'],      // passing the int
+                                    className: c['classname'],
+                                    gradeLevel: c['curriculumlevel'], // passing the level
+                                  ),
                                 ),
-                              ),
                               );
                             },
                         );
