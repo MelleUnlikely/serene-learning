@@ -152,6 +152,7 @@ Future<void> _deleteClass(int classId) async {
 
                   DropdownButtonFormField<String>(
                     initialValue: _curriculumLevel,
+                    dropdownColor: Colors.white,
                     items: _levels.map((l) => DropdownMenuItem(value: l,
                       child: Text(l))).toList(),
                     onChanged: (val) => setState(() => _curriculumLevel = val!),

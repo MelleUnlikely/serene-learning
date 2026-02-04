@@ -146,18 +146,20 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
                     },
                   ),
             ),
-            Positioned(
-              bottom: 20,
-              right: 20,
-              child: FloatingActionButton.extended(
-                onPressed: _showCreateLessonDialog,
-                label: const Text("Add Lesson", style: TextStyle(color: Color(0xFF1D5A71))),
-                icon: const Icon(Icons.add, color: Color(0XFF1d5a71)),
-                backgroundColor: const Color(0xFFa5ceeb),
-              ),
-            ),
+            
           ],//children
-        )
+        ),
+        Positioned(
+          bottom: 30, // Distance from the bottom of the screen
+          right: 30,  // Distance from the right of the screen
+          child: FloatingActionButton.extended(
+            onPressed: _showCreateLessonDialog,
+            label: const Text("Add Lesson",
+              style: TextStyle(color: Color(0xFF1D5A71))),
+            icon: const Icon(Icons.add, color: Color(0XFF1d5a71)),
+            backgroundColor: const Color(0xFFa5ceeb),
+          ),
+        ),
       ],
     );
   }

@@ -99,7 +99,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
         title,
         style: TextStyle(
           fontWeight: _selectedIndex == index ? FontWeight.bold : FontWeight.normal,
-          color: _selectedIndex == index ? const Color(0xFF1D5A71) : Colors.black54,
+          color: _selectedIndex == index ? const Color(0xFF1D5A71) : Color(0xFF1D5A71),
         ),
       ),
       onTap: () {
