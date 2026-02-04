@@ -4,7 +4,7 @@ import '../../upload_service.dart';
 import 'package:flutter_application_1/widgets/serene_menu.dart';
 
 class CreateFlashcardScreen extends StatefulWidget {
-  final int lessonId; 
+  final int lessonId;
   const CreateFlashcardScreen({super.key, required this.lessonId});
 
   @override
