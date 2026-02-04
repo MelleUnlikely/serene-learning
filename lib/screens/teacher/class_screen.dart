@@ -51,7 +51,7 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
     return (Random().nextInt(9000) + 1000).toString();
   }
 
-Future<void> _deleteClass(int classId) async {
+  Future<void> _deleteClass(int classId) async {
     try {
       await Supabase.instance.client.from('class').delete().eq('classid', classId);
       _fetchMyClasses();
