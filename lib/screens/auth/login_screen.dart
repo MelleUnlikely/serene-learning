@@ -63,17 +63,16 @@ Future<void> _handleLogin() async {
             fit: BoxFit.cover,
           ),
         ),
-        child: Center(
+        child: Align(
+          alignment: const Alignment(0, -0.9),
           child: SingleChildScrollView(
             child: Column(
               children: [
                 //logo muna
                 Image.asset(
                   "assets/images/logo.png",
-                  height: 200,
-                  fit: BoxFit.contain,
+                  height: 180
                 ),
-                const SizedBox(height: 25),//parang gap
                 
                 //lalagyan nila username + password + sign up
                 Container(
@@ -101,13 +100,13 @@ Future<void> _handleLogin() async {
                           color: Color(0xFF1D5A71)
                         ),
                       ),
-                      const SizedBox(height: 40),
+                      //const SizedBox(height: 5),
                       
                       //for username field
                       TextField(
                         controller: _emailController,
                         decoration: const InputDecoration(
-                          labelText: "Username",
+                          labelText: "Email", //changed from username into email.
                           labelStyle: TextStyle(color: Color(0xFF1D5A71), fontWeight: FontWeight.bold),
                           enabledBorder: UnderlineInputBorder(
                             borderSide: BorderSide(color: Color(0XFF7AA9CA), width: 1),

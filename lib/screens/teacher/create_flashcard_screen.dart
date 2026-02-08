@@ -122,12 +122,14 @@ double _uploadProgress = 0;
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Card(
-              elevation: 4,
+              color: Color(0xFFD0EDF9),
+              elevation: 10,
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   children: [
-                    TextField(controller: _meaningController, decoration: const InputDecoration(labelText: "Sign Meaning")),
+                    TextField(controller: _meaningController, decoration: const InputDecoration(labelText: "Sign Meaning",
+                      labelStyle: TextStyle(color: Color(0xFF1D5A71)))),
                     const SizedBox(height: 10),
                     ListTile(
                       leading: Icon(Icons.image, color: _uploadedImgUrl != null ? Colors.green : null),
@@ -144,8 +146,9 @@ double _uploadProgress = 0;
                       ? const CircularProgressIndicator() 
                       : ElevatedButton(
                           onPressed: (_uploadedImgUrl != null && _uploadedVideoUrl != null) ? _saveFlashcard : null, 
-                          child: const Text("Add Flashcard to Lesson"),
-                        ),
+                          child: const Text("Add Flashcard to Lesson",
+                          style: TextStyle(color: Color(0xFF1D5A71)),),
+                      ),
                   ],
                 ),  
               ),

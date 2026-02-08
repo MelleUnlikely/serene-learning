@@ -95,7 +95,7 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.all(20.0),
+              padding: const EdgeInsets.only(top: 20, left: 20, right: 20, bottom: 8),
               child: Text(
                 "${widget.className} - ${widget.gradeLevel}",
                 style: const TextStyle(
@@ -110,7 +110,7 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
               child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : ListView.builder(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16, top: 0),
                     itemCount: _lessons.length,
                     itemBuilder: (context, index) {
                       final lesson = _lessons[index];

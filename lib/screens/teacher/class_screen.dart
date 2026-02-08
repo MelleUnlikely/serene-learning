@@ -135,7 +135,7 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
 
       body: Row(
         children: [
-          Expanded(
+          Expanded( //this is ung create class part (ung left)
             flex: 1,
             child: Padding(
               padding: const EdgeInsets.all(24.0),
@@ -181,7 +181,7 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
           const VerticalDivider(width: 1, thickness: 1, color: Color(0xFF1D5A71)),
 
 
-          Expanded(
+          Expanded( //this is the one in the right (manage class)
             flex: 2,
             child: Padding(
               padding: const EdgeInsets.all(24.0),
