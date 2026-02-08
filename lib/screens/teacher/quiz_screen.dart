@@ -77,6 +77,7 @@ Future<void> _loadInitialData() async {
 
   Widget _buildQuizSettings() {
   return Card(
+    color: Color(0xFFD0EDF9),
     elevation: 0,
     shape: RoundedRectangleBorder(
       side: const BorderSide(color: Color(0xFF1D5A71), width: 1),
@@ -106,8 +107,9 @@ Future<void> _loadInitialData() async {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("Max Attempts", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    const Text("Max Attempts", style: TextStyle(fontSize: 12, color: Color(0xFF1D5A71))),
                     DropdownButton<int>(
+                      dropdownColor: Colors.white,
                       isExpanded: true,
                       value: _maxAttempts,
                       items: [1, 2, 3, 5, 10, 99].map((int value) {
@@ -127,8 +129,9 @@ Future<void> _loadInitialData() async {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("Grading Policy", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    const Text("Grading Policy", style: TextStyle(fontSize: 12, color: Color(0xFF1D5A71))),
                     DropdownButton<String>(
+                      dropdownColor: Colors.white,
                       isExpanded: true,
                       value: _selectedPolicy,
                       items: _policies.map((String value) {
@@ -301,8 +304,12 @@ Widget _buildGenerateView() {
             const Text("No quiz has been created for this lesson yet."),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              icon: const Icon(Icons.auto_awesome),
-              label: const Text("Generate Preview"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFa5ceeb),
+                foregroundColor: const Color(0xFF006064),
+              ),
+              icon: const Icon(Icons.auto_awesome, color: Color(0xFF1D5A71)),
+              label: const Text("Generate Preview", style: TextStyle(color: Color(0xFF1D5A71)),),
               onPressed: () async {
                  setState(() => _isLoading = true);
                  try {
@@ -334,6 +341,7 @@ Widget _buildGenerateView() {
             itemBuilder: (context, index) {
               final q = _tempQuizData[index];
               return Card(
+                color: Color(0xFFD0EDF9),
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Column(
                   children: [

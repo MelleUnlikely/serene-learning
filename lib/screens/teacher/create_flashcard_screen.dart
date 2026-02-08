@@ -5,7 +5,9 @@ import 'package:flutter_application_1/widgets/serene_menu.dart';
 
 class CreateFlashcardScreen extends StatefulWidget {
   final int lessonId;
-  const CreateFlashcardScreen({super.key, required this.lessonId});
+  final String lessontitle;
+  
+  const CreateFlashcardScreen({super.key, required this.lessonId, required this.lessontitle});
 
   @override
   State<CreateFlashcardScreen> createState() => _CreateFlashcardScreenState();
@@ -109,7 +111,7 @@ double _uploadProgress = 0;
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
             child: Text(
-              "Manage Cards - Lesson #${widget.lessonId}",
+              "Manage Cards - ${widget.lessontitle}",
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -173,22 +175,50 @@ double _uploadProgress = 0;
 
           // Existing cards
           Expanded(
-            child: ListView.builder(
-              itemCount: _existingCards.length,
-              itemBuilder: (context, index) {
-                final card = _existingCards[index];
-                return ListTile(
-                  leading: Image.network(card['imgurl'], width: 50, height: 50, fit: BoxFit.cover, 
-                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image)),
-                  title: Text(card['signmeaning']),
-                  subtitle: const Text("Video & Image attached"),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () => _deleteCard(card),
-                  ),
-                );
-              },
-            ),
+            child: _existingCards.isEmpty
+              ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.style_outlined, size: 80, color: Colors.grey[300]),
+                    const SizedBox(height: 16),
+                    const Text(
+                      "No flashcards yet.",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const Text(
+                      "Upload a sign above to get started!",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ],//pag empty ung cards for the lesson
+                ),
+              )
+              : ListView.builder(
+                itemCount: _existingCards.length,
+                itemBuilder: (context, index){
+                  final card = _existingCards[index];
+                  return ListTile(
+                    leading: Image.network(
+                      card['imgurl'],
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const Icon(Icons.broken_image),
+                    ),
+                    title: Text(card['signmeaning']),
+                    subtitle: const Text("Video & Image attached"),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () => _deleteCard(card),
+                    ),
+                  );
+                },
+              )
           ),
         ],
       ),

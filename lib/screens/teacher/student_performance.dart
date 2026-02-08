@@ -118,7 +118,7 @@ Widget _buildPerformanceTable() {
     decoration: BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Colors.black12),
+      border: Border.all(color: Color(0xFF1D5A71)),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -129,16 +129,18 @@ Widget _buildPerformanceTable() {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1D5A71))),
         ),
         const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
           child: Row(
             children: [
-              Expanded(flex: 3, child: Text("Student Name", style: TextStyle(fontWeight: FontWeight.bold))),
+              Expanded(flex: 2, child: Text("Student Name", style: TextStyle(fontWeight: FontWeight.bold))),
               Expanded(flex: 1, child: Text("Accuracy", style: TextStyle(fontWeight: FontWeight.bold))),
               Expanded(flex: 1, child: Text("Status", style: TextStyle(fontWeight: FontWeight.bold))),
             ],
           ),
         ),
+
         const Divider(height: 1),
+
         Expanded(
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
@@ -150,12 +152,30 @@ Widget _buildPerformanceTable() {
                         final student = _students[index];
                         double grade = (student['overall_grade'] ?? 0.0).toDouble();
 
-                        return ListTile(
-                          title: Row(
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+                          child: Row(
                             children: [
-                              Expanded(flex: 3, child: Text(student['fullname'] ?? "Unknown")),
-                              Expanded(flex: 1, child: Text("${grade.toStringAsFixed(1)}%")), 
-                              Expanded(flex: 1, child: _buildRemarksBadge(grade)),
+                              Expanded(
+                                flex: 2, 
+                                child: Text(
+                                  student['fullname'] ?? "Unknown",
+                                  style: const TextStyle(color: Colors.black),
+                                )
+                              ),
+                              // flex: 1 matches accuracy
+                              Expanded(
+                                flex: 1, 
+                                child: Text("${grade.toStringAsFixed(1)}%")
+                              ), 
+                              // flex: 1 matches status
+                              Expanded(
+                                flex: 1, 
+                                child: Align(
+                                  alignment: Alignment.centerLeft, // Align badge to left of its space
+                                  child: _buildRemarksBadge(grade)
+                                )
+                              ),
                             ],
                           ),
                         );
@@ -198,11 +218,11 @@ Widget _buildPerformanceTable() {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black12),
+        border: Border.all(color: Color(0xFF1D5A71)),
       ),
       child: Column(
         children: [
-          const Text("Student Activity", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text("Student Activity", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1D5A71))),
           const SizedBox(height: 30),
           SizedBox(
             height: 180,
@@ -210,10 +230,22 @@ Widget _buildPerformanceTable() {
               children: [
                 PieChart(
                   PieChartData(
-                    centerSpaceRadius: 65,
+                    centerSpaceRadius: 70,
+                    centerSpaceColor: Colors.white,
+                    sectionsSpace: 0,
                     sections: [
-                      PieChartSectionData(color: const Color(0xFF1D5A71), value: activeValue, showTitle: false, radius: 18),
-                      PieChartSectionData(color: Colors.black12, value: inactiveValue, showTitle: false, radius: 18),
+                      PieChartSectionData(
+                        color: const Color(0xFF1D5A71), 
+                        value: _activeCount.toDouble(), 
+                        showTitle: false, 
+                        radius: 20
+                      ),
+                      PieChartSectionData(
+                        color: const Color(0xFFE0E0E0), 
+                        value: (_totalStudents - _activeCount).toDouble(), 
+                        showTitle: false, 
+                        radius: 20
+                      ),
                     ],
                   ),
                 ),
@@ -230,7 +262,7 @@ Widget _buildPerformanceTable() {
             ),
           ),
           const SizedBox(height: 15),
-          Text("as of $formattedDate", style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          Text("as of $formattedDate", style: const TextStyle(fontSize: 12, color: Color(0xFF1D5A71))),
         ],
       ),
     );
@@ -243,7 +275,7 @@ Widget _buildPerformanceTable() {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black12),
+        border: Border.all(color: Color(0xFF1D5A71)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

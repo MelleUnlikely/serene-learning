@@ -136,7 +136,8 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(builder: (context) =>CreateFlashcardScreen (
-                                  lessonId: lesson['lessonid']
+                                  lessonId: lesson['lessonid'],
+                                  lessontitle: lesson['lessontitle']
                                 ),
                               ),
                               );
