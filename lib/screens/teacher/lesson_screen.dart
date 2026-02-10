@@ -56,7 +56,6 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        // 1. Remove default title padding to let the header fill the top
         titlePadding: EdgeInsets.zero, 
         title: Container(
           padding: const EdgeInsets.all(20),
@@ -76,18 +75,21 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
             ),
           ),
         ),
-        content: Padding(
-          padding: const EdgeInsets.only(top: 5.0),
-          child: TextField(
-            controller: titleController,
-            decoration: const InputDecoration(
-              labelText: "Lesson Title",
-              labelStyle: TextStyle(color: Color(0xFF1D5A71)),
-              focusedBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: Color(0xFF1D5A71)),
+        content: SizedBox(
+          width: 500,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 5.0),
+            child: TextField(
+              controller: titleController,
+              decoration: const InputDecoration(
+                labelText: "Lesson Title",
+                labelStyle: TextStyle(color: Color(0xFF1D5A71)),
+                focusedBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Color(0xFF1D5A71)),
+                ),
               ),
             ),
-          ),
+          ),    
         ),
         actions: [
           TextButton(
