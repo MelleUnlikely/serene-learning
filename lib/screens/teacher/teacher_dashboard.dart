@@ -69,7 +69,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
           Container(
             width: 250,
             decoration: const BoxDecoration(
-              border: Border(right: BorderSide(color: Colors.black12)),
+              border: Border(right: BorderSide(color: Color(0xFF1D5A71))),
             ),
             child: Column(
               children: [

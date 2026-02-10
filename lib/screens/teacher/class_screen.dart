@@ -55,7 +55,7 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
     try {
       await Supabase.instance.client.from('class').delete().eq('classid', classId);
       _fetchMyClasses();
-      _showSnackBar("Class deleted", Colors.grey);
+      _showSnackBar("Class deleted", Colors.blueGrey);
     } catch (e) {
       _showSnackBar("Could not delete class", Colors.red);
     }
@@ -194,7 +194,31 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
                     ),
                   
                   Expanded(
-                    child: ListView.builder(
+                    child: _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      :_myClasses.isEmpty
+                        ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.school_outlined, size: 64, color: Colors.grey[400]),
+                          const SizedBox(height: 16),
+                          const Text(
+                            "No classes made yet",
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Color(0xFF1D5A71),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const Text(
+                            "Use the form on the left to get started.",
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                            ],
+                          ),
+                        )
+                    : ListView.builder(
                       itemCount: _myClasses.length,
                       itemBuilder: (context, index) {
                         final c = _myClasses[index];
@@ -231,7 +255,7 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
                                                 // Cancel Button
                                                 TextButton(
                                                   onPressed: () => Navigator.pop(context),
-                                                  child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+                                                  child: const Text("Cancel", style: TextStyle(color: Color(0xFF1D4E5F))),
                                                 ),
                                                 // Confirm Delete Button
                                                 TextButton(
@@ -279,6 +303,32 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
   }
 
   void _showSnackBar(String message, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
+    double screenHeight = MediaQuery.of(context).size.height;
+    double screenWidth = MediaQuery.of(context).size.width;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          textAlign: TextAlign.left,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        
+        // We set a massive bottom margin to push it to the top of the screen
+        margin: EdgeInsets.only(
+          bottom: screenHeight - 100, //para mapunta sa taas ung snackbar
+          left: screenWidth * 0.8,
+          right: 20,
+        ),
+        
+        dismissDirection: DismissDirection.up, // Allows user to swipe it away upwards
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(25),
+        ),
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 }

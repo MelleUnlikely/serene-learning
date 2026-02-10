@@ -13,9 +13,10 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final bool _isLoading = false;
+  bool _isLoading = false;
 
 Future<void> _handleLogin() async {
+  setState(() => _isLoading = true);
   try {
     final response = await Supabase.instance.client.auth.signInWithPassword(
       email: _emailController.text.trim(),
@@ -39,13 +40,37 @@ Future<void> _handleLogin() async {
       }
     }
   } catch (e) {
-    _showSnackBar("Login Failed: $e", Colors.red);
+    _showSnackBar("Login Failed: Invalid Credentials. Try again.", Colors.red);
+  }
+  finally {
+    setState(() => _isLoading = false); // Stop loading even if it fails
   }
 }
 
   void _showSnackBar(String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: color),
+      SnackBar(
+        content: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        
+        // We set a massive bottom margin to push it to the top of the screen
+        margin: EdgeInsets.only(
+          bottom: 120, //para mapunta sa taas ung snackbar
+          left: 590,
+          right: 590,
+        ),
+        
+        dismissDirection: DismissDirection.up, // Allows user to swipe it away upwards
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(25),
+        ),
+        duration: const Duration(seconds: 3),
+      ),
     );
   }
 

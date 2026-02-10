@@ -145,7 +145,7 @@ Widget _buildPerformanceTable() {
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
               : _students.isEmpty
-                  ? const Center(child: Text("No students enrolled in this class."))
+                  ? const Center(child: Text("No students enrolled in this class.", style: TextStyle(color: Color(0xFF1D5A71)),))
                   : ListView.builder(
                       itemCount: _students.length,
                       itemBuilder: (context, index) {
@@ -254,7 +254,7 @@ Widget _buildPerformanceTable() {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text("$_activeCount", style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF1D5A71))),
-                      const Text("Logged in\nStudents", textAlign: TextAlign.center, style: TextStyle(fontSize: 11)),
+                      const Text("Logged in\nStudents", textAlign: TextAlign.center, style: TextStyle(fontSize: 11, color: Color(0xFF1D5A71))),
                     ],
                   ),
                 ),

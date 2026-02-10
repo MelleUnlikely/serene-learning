@@ -54,7 +54,7 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
     return showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text("New Lesson for ${widget.gradeLevel}"),
+        title: Text("New Lesson for ${widget.className}"),
         content: TextField(
           controller: titleController,
           decoration: const InputDecoration(labelText: "Lesson Title"),
@@ -109,6 +109,24 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
             Expanded(
               child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
+                : _lessons.isEmpty
+                  ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.library_books_outlined, size: 64, color: Colors.grey),
+                        const SizedBox(height: 16),
+                        const Text(
+                          "No lessons created yet!",
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
                 : ListView.builder(
                     padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16, top: 0),
                     itemCount: _lessons.length,
@@ -166,6 +184,32 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
   }
 
   void _showSnackBar(String message, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
+    double screenHeight = MediaQuery.of(context).size.height;
+    double screenWidth = MediaQuery.of(context).size.width;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          textAlign: TextAlign.left,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        
+        // We set a massive bottom margin to push it to the top of the screen
+        margin: EdgeInsets.only(
+          bottom: screenHeight - 100, //para mapunta sa taas ung snackbar
+          left: screenWidth * 0.8,
+          right: 20,
+        ),
+        
+        dismissDirection: DismissDirection.up, // Allows user to swipe it away upwards
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(25),
+        ),
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 }
