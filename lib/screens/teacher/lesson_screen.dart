@@ -54,21 +54,60 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
     return showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text("New Lesson for ${widget.className}"),
-        content: TextField(
-          controller: titleController,
-          decoration: const InputDecoration(labelText: "Lesson Title"),
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        // 1. Remove default title padding to let the header fill the top
+        titlePadding: EdgeInsets.zero, 
+        title: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: const BoxDecoration(
+            color: Color(0xFFD0EDF9),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(15),
+              topRight: Radius.circular(15),
+            ),
+          ),
+          child: Text(
+            "New Lesson for ${widget.className}",
+            style: const TextStyle(
+              color: Color(0xFF1D5A71),
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        content: Padding(
+          padding: const EdgeInsets.only(top: 5.0),
+          child: TextField(
+            controller: titleController,
+            decoration: const InputDecoration(
+              labelText: "Lesson Title",
+              labelStyle: TextStyle(color: Color(0xFF1D5A71)),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Color(0xFF1D5A71)),
+              ),
+            ),
+          ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          TextButton(
+            onPressed: () => Navigator.pop(context), 
+            child: const Text("Cancel", style: TextStyle(color: Color(0xFF1D5A71))),
+          ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFa5ceeb),
+              foregroundColor: const Color(0xFF1D5A71),
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
             onPressed: () async {
               if (titleController.text.isNotEmpty) {
                 await _createNewLesson(titleController.text.trim());
                 Navigator.pop(context);
               }
             },
-            child: const Text("Create"),
+            child: const Text("Create", style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),

@@ -103,7 +103,20 @@ Future<void> _fetchStudents() async {
 
               Expanded(
                 child: _students.isEmpty
-              ? const Center(child: Text("No students enrolled yet."))
+              ? const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.person, 
+                      size: 64, 
+                      color: Colors.grey
+                    ),
+                    const SizedBox(height: 16),
+                    Text("No students enrolled yet.", style: TextStyle(color: Colors.grey),)
+                  ],
+                )
+              )
               : ListView.builder(
                   itemCount: _students.length,
                   itemBuilder: (context, index) {

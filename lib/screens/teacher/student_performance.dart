@@ -113,79 +113,100 @@ class _StudentPerformanceScreenState extends State<StudentPerformanceScreen> {
     );
   }
 
-Widget _buildPerformanceTable() {
-  return Container(
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Color(0xFF1D5A71)),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.all(20.0),
-          child: Text("Student Performance", 
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1D5A71))),
-        ),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
-          child: Row(
-            children: [
-              Expanded(flex: 2, child: Text("Student Name", style: TextStyle(fontWeight: FontWeight.bold))),
-              Expanded(flex: 1, child: Text("Accuracy", style: TextStyle(fontWeight: FontWeight.bold))),
-              Expanded(flex: 1, child: Text("Status", style: TextStyle(fontWeight: FontWeight.bold))),
-            ],
+  Widget _buildPerformanceTable() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Color(0xFF1D5A71)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(20.0),
+            child: Text("Student Performance", 
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1D5A71))),
           ),
-        ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+            child: Row(
+              children: [
+                Expanded(flex: 2, child: Text("Student Name", style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1D5A71)))),
+                Expanded(flex: 1, child: Text("Accuracy", style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1D5A71)))),
+                Expanded(flex: 1, child: Text("Status", style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1D5A71)))),
+              ],
+            ),
+          ),
 
-        const Divider(height: 1),
+          const Divider(height: 1, color: Color(0xFF1D5A71)),
 
-        Expanded(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _students.isEmpty
-                  ? const Center(child: Text("No students enrolled in this class.", style: TextStyle(color: Color(0xFF1D5A71)),))
-                  : ListView.builder(
-                      itemCount: _students.length,
-                      itemBuilder: (context, index) {
-                        final student = _students[index];
-                        double grade = (student['overall_grade'] ?? 0.0).toDouble();
-
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                flex: 2, 
-                                child: Text(
-                                  student['fullname'] ?? "Unknown",
-                                  style: const TextStyle(color: Colors.black),
-                                )
-                              ),
-                              // flex: 1 matches accuracy
-                              Expanded(
-                                flex: 1, 
-                                child: Text("${grade.toStringAsFixed(1)}%")
-                              ), 
-                              // flex: 1 matches status
-                              Expanded(
-                                flex: 1, 
-                                child: Align(
-                                  alignment: Alignment.centerLeft, // Align badge to left of its space
-                                  child: _buildRemarksBadge(grade)
-                                )
-                              ),
-                            ],
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _students.isEmpty
+                    ? const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Using person_off or people_outline for "No students"
+                          Icon(
+                            Icons.person, 
+                            size: 64, 
+                            color: Colors.grey
                           ),
-                        );
-                      },
-                    ),
-        ),
-      ],
-    ),
-  );
-}
+                          const SizedBox(height: 16),
+                          const Text(
+                            "No students enrolled in this class.",
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                    : ListView.builder(
+                        itemCount: _students.length,
+                        itemBuilder: (context, index) {
+                          final student = _students[index];
+                          double grade = (student['overall_grade'] ?? 0.0).toDouble();
+
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  flex: 2, 
+                                  child: Text(
+                                    student['fullname'] ?? "Unknown",
+                                    style: const TextStyle(color: Colors.black),
+                                  )
+                                ),
+                                // flex: 1 matches accuracy
+                                Expanded(
+                                  flex: 1, 
+                                  child: Text("${grade.toStringAsFixed(1)}%")
+                                ), 
+                                // flex: 1 matches status
+                                Expanded(
+                                  flex: 1, 
+                                  child: Align(
+                                    alignment: Alignment.centerLeft, // Align badge to left of its space
+                                    child: _buildRemarksBadge(grade)
+                                  )
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildRemarksBadge(double grade) {
     bool isPassed = grade >= 60.0;
