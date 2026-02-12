@@ -154,7 +154,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           child: SingleChildScrollView(
             child: Column(
               children: [
-                const SizedBox(height: 60), // Space for top
+                const SizedBox(height: 30), // Space for top
                 Container(
                   constraints: const BoxConstraints(maxWidth: 400),
                   margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
@@ -205,6 +205,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                         onChanged: (val) => setState(() => _selectedSchoolId = val),
                       ),
                       const SizedBox(height: 20),
+
+                      _buildInputField(_employeeIdController, "Employee ID"),
+                      const SizedBox(height: 20),
+
+                      _buildInputField( _departmentController, "Department"),
+                      const SizedBox(height: 20,),
 
                       _buildInputField(_passwordController, "Password", isObscure: true),
                       const SizedBox(height: 20),
