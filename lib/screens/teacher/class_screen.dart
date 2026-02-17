@@ -143,7 +143,8 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
                 children: [
                   const Text("Create New Class",
                     style: TextStyle(fontSize: 20,
-                    fontWeight: FontWeight.bold)),
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1D5A71))),
                   const SizedBox(height: 30),
                   TextField(controller: _classNameController,
                     decoration: const InputDecoration(labelText: "Class Name",
@@ -190,7 +191,7 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
                 children: [
                   const Text(
                       "Manage Class",
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1D5A71)),
                     ),
                   
                   Expanded(
@@ -223,8 +224,8 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
                       itemBuilder: (context, index) {
                         final c = _myClasses[index];
                         return ListTile(
-                          title: Text(c['classname']),
-                          subtitle: Text("Level: ${c['curriculumlevel']} | Code: ${c['classcode']}"),
+                          title: Text(c['classname'], style: TextStyle(color: Color(0xFF1D5A71)),),
+                          subtitle: Text("Level: ${c['curriculumlevel']} | Code: ${c['classcode']}", style: TextStyle(color: Color(0xFF1D5A71)),),
                           trailing: SizedBox(
                                   width: 100, 
                                   child: Row(
