@@ -192,10 +192,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
                       //Dropdown for school selection
                       DropdownButtonFormField<int>(
-                        value: _selectedSchoolId,
+                        initialValue: _selectedSchoolId,
                         decoration: const InputDecoration(
                           labelText: "Select School",
-                          labelStyle: const TextStyle(color: Color(0xFF1D5A71), fontSize: 14, fontWeight: FontWeight.bold),
+                          labelStyle: TextStyle(color: Color(0xFF1D5A71), fontSize: 14, fontWeight: FontWeight.bold),
                           enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0XFF7AA9CA))),
                         ),
                         items: _schools.map((s) => DropdownMenuItem<int>(

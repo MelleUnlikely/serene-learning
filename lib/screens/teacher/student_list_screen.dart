@@ -27,9 +27,10 @@ class _StudentListScreenState extends State<StudentListScreen> {
 
 Future<void> _fetchStudents() async {
   try {
+
     final data = await supabase
         .from('enrollmentrecord')
-        .select('profiles(fullname, email)') 
+        .select('*, profiles(fullname, email)') 
         .eq('classid', widget.classId);
 
     setState(() {
@@ -37,6 +38,7 @@ Future<void> _fetchStudents() async {
       _isLoading = false;
     });
   } catch (e) {
+    debugPrint("Error: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error fetching students: $e"), backgroundColor: Colors.red),
       );
@@ -112,7 +114,7 @@ Future<void> _fetchStudents() async {
                       size: 64, 
                       color: Colors.grey
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     Text("No students enrolled yet.", style: TextStyle(color: Colors.grey),)
                   ],
                 )
