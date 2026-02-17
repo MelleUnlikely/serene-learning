@@ -1,3 +1,5 @@
+import 'dart:ui_web';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/widgets/serene_menu.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -147,17 +149,51 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
                     color: Color(0xFF1D5A71))),
                   const SizedBox(height: 30),
                   TextField(controller: _classNameController,
-                    decoration: const InputDecoration(labelText: "Class Name",
-                    border: OutlineInputBorder())),
+                    decoration: InputDecoration(
+                      labelText: "Class Name",
+                      labelStyle: const TextStyle(color: Color(0xFF1D5A71)),
+                     enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Color(0xFF1D5A71), width: 1.0),
+                      ),
+                      
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Color(0xFF1D5A71), width: 2.0),
+                      ),
+                      
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Colors.red, width: 1.0),
+                      ),
+                    )
+                  ),
                   const SizedBox(height: 20),
 
                   DropdownButtonFormField<String>(
                     initialValue: _curriculumLevel,
                     dropdownColor: Colors.white,
                     items: _levels.map((l) => DropdownMenuItem(value: l,
-                      child: Text(l))).toList(),
+                      child: Text(l, style: TextStyle(color: Color(0xFF1D5A71)),))).toList(),
                     onChanged: (val) => setState(() => _curriculumLevel = val!),
-                    decoration: const InputDecoration(labelText: "Curriculum Level", border: OutlineInputBorder()),
+                    decoration: InputDecoration(
+                      labelText: "Curriculum Level",
+                      labelStyle: const TextStyle(color: Color(0xFF1D5A71)),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Color(0xFF1D5A71), width: 1.0),
+                      ),
+                      
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Color(0xFF1D5A71), width: 2.0),
+                      ),
+                      
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Colors.red, width: 1.0),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 20),
                   _isLoading ? const CircularProgressIndicator() :
