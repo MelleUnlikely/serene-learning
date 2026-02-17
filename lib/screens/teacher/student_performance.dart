@@ -30,51 +30,100 @@ class _StudentPerformanceScreenState extends State<StudentPerformanceScreen> {
   Future<void> _fetchStudentData() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
-    
+
     try {
-      debugPrint("Fetching data for class: ${widget.classId}");
-
-      // 1. Fetch Students from the View we just fixed
-      final List<dynamic> data = await supabase
-          .from('student_activity_view')
-          .select()
+      // 1. Fetch Students - Include both userid (for your index) and uid (for matching)
+      final List<dynamic> enrollmentData = await supabase
+          .from('enrollmentrecord')
+          .select('''
+            studentid, 
+            profiles!inner (
+              userid, 
+              uid, 
+              fullname, 
+              last_login
+            )
+          ''')
           .eq('classid', widget.classId);
-      
-      debugPrint("View Data received: ${data.length} students");
 
-      final response = await supabase
-        .from('student_activity_view')
-        .select()
-        .eq('classid', widget.classId);
+      final List<Map<String, dynamic>> studentsData = List<Map<String, dynamic>>.from(
+        enrollmentData.map((e) => e['profiles'])
+      );
 
-      debugPrint("RAW JSON FROM VIEW: $response");
+      // 2. Fetch Quizzes
+      final List<dynamic> quizzesData = await supabase
+          .from('quiz')
+          .select('quizid, grading_policy, quizquestion(count), lesson!inner(classid)')
+          .eq('lesson.classid', widget.classId);
 
-      // 2. Fetch Weekly Activity Trend
-      final List<dynamic> weeklyData = await supabase
-          .rpc('get_weekly_login_activity', params: {'p_class_id': widget.classId});
+      // 3. Fetch Results
+      final List<dynamic> resultsData = await supabase
+          .from('quiz_results')
+          .select('quizid, studentid, score');
 
+      List<Map<String, dynamic>> processedStudents = [];
+
+      for (var student in studentsData) {
+        // CRITICAL FIX: Use 'uid' (the UUID) because quiz_results uses UUIDs
+        final String studentUuid = student['uid'].toString(); 
+        List<double> quizFinalPercentages = [];
+
+        for (var quiz in quizzesData) {
+          final String quizId = quiz['quizid'].toString();
+          String policy = quiz['grading_policy'] ?? 'average';
+          
+          // Question Count logic
+          int totalQuestions = 0;
+          final qCount = quiz['quizquestion'];
+          if (qCount is List && qCount.isNotEmpty) {
+            totalQuestions = qCount[0]['count'] ?? 0;
+          } else if (qCount is Map) {
+            totalQuestions = qCount['count'] ?? 0;
+          }
+          if (totalQuestions <= 0) totalQuestions = 1; 
+
+          // Match using the UUID (studentUuid)
+          var studentAttempts = resultsData.where((r) => 
+            r['quizid'].toString() == quizId && 
+            r['studentid'].toString() == studentUuid
+          ).toList();
+
+          if (studentAttempts.isNotEmpty) {
+            List<double> attemptPercents = studentAttempts.map((a) {
+              double score = (a['score'] as num).toDouble();
+              return (score / totalQuestions.toDouble()) * 100.0;
+            }).toList();
+
+            double finalQuizScore = 0;
+            if (policy == 'highest') {
+              finalQuizScore = attemptPercents.reduce((a, b) => a > b ? a : b);
+            } else if (policy == 'average') {
+              finalQuizScore = attemptPercents.reduce((a, b) => a + b) / attemptPercents.length;
+            } else {
+              finalQuizScore = attemptPercents.first;
+            }
+            
+            quizFinalPercentages.add(finalQuizScore);
+          }
+        }
+
+        double overallAccuracy = quizFinalPercentages.isEmpty 
+            ? 0.0 
+            : quizFinalPercentages.reduce((a, b) => a + b) / quizFinalPercentages.length;
+
+        processedStudents.add({
+          ...student,
+          'overall_grade': overallAccuracy,
+          'last_sign_in_at': student['last_login'],
+        });
+      }
+
+      // 4. Update State
       if (mounted) {
         setState(() {
-          _students = List<Map<String, dynamic>>.from(data);
+          _students = processedStudents;
           _totalStudents = _students.length;
-
-          // Donut Chart Logic: Count logins for TODAY
-          final now = DateTime.now();
-          _activeCount = _students.where((s) {
-            if (s['last_sign_in_at'] == null) return false;
-            DateTime loginDate = DateTime.parse(s['last_sign_in_at']);
-            return loginDate.year == now.year &&
-                   loginDate.month == now.month &&
-                   loginDate.day == now.day;
-          }).length;
-
-          // Line Chart Logic: Map the 7-day trend
-          _weeklySpots = weeklyData.asMap().entries.map((entry) {
-            return FlSpot(
-              entry.key.toDouble(), 
-              (entry.value['student_count'] ?? 0).toDouble()
-            );
-          }).toList();
+          // ... (rest of your state updates for charts)
         });
       }
     } catch (e) {

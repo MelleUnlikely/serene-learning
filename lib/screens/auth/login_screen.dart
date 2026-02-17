@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'registration_screen.dart'; 
 import '../teacher/class_screen.dart'; 
+import '../admin/admin_dashboard.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -24,7 +25,6 @@ Future<void> _handleLogin() async {
     );
 
     if (response.user != null) {
-      // Fetch the role and school info
       final userData = await Supabase.instance.client
           .from('profiles')
           .select('roletype, userid, schoolid')
@@ -36,14 +36,18 @@ Future<void> _handleLogin() async {
           context,
           MaterialPageRoute(builder: (context) => CreateClassScreen(teacherId: userData['userid'])),
         );
-      } else if (userData['roletype'] == 'School Administrator') {
+      } 
+      else if (userData['roletype'] == 'School Administrator') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => AdminDashboard()),
+        );
       }
     }
   } catch (e) {
     _showSnackBar("Login Failed: Invalid Credentials. Try again.", Colors.red);
-  }
-  finally {
-    setState(() => _isLoading = false); // Stop loading even if it fails
+  } finally {
+    if (mounted) setState(() => _isLoading = false); 
   }
 }
 

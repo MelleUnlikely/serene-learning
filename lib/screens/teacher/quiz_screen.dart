@@ -34,46 +34,88 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
 Future<void> _loadInitialData() async {
-    if (!mounted) return;
-    setState(() => _isLoading = true);
+  if (!mounted) return;
+  setState(() => _isLoading = true);
 
-    try {
-      final quiz = await supabase
-          .from('quiz')
-          .select()
-          .eq('lessonid', widget.lessonId)
-          .maybeSingle();
+  try {
+    final quiz = await supabase
+        .from('quiz')
+        .select('*, quizquestion(count)')
+        .eq('lessonid', widget.lessonId)
+        .maybeSingle();
 
-      if (quiz != null) {
-        _existingQuizId = quiz['quizid'];
+    if (quiz != null) {
+      _existingQuizId = quiz['quizid'];
+      int totalQuestions = (quiz['quizquestion'] != null && quiz['quizquestion'].isNotEmpty)
+          ? quiz['quizquestion'][0]['count'] ?? 1 
+          : 1;
 
-        setState(() {
-          _maxAttempts = quiz['max_attempts'] ?? 3;
-          _selectedPolicy = quiz['grading_policy'] ?? 'average';
-        });
+      setState(() {
+        _maxAttempts = quiz['max_attempts'] ?? 3;
+        _selectedPolicy = quiz['grading_policy'] ?? 'average';
+      });
 
-        final resultData = await supabase
-            .from('quiz_results')
-            .select('score, completed_at, profiles!inner(fullname)') 
-            .eq('quizid', _existingQuizId!)
-            .order('completed_at', ascending: false);
+      final resultData = await supabase
+          .from('quiz_results')
+          .select('score, completed_at, profiles!inner(fullname)')
+          .eq('quizid', _existingQuizId!)
+          .order('completed_at', ascending: false);
 
-        setState(() {
-          _studentResults = List<Map<String, dynamic>>.from(resultData);
-        });
-      } else {
-        setState(() {
-          _existingQuizId = null;
-          _tempQuizData = [];
-        });
+      // --- GROUPING & ADAPTIVE CALCULATION LOGIC ---
+      Map<String, List<Map<String, dynamic>>> grouped = {};
+      
+      for (var res in resultData) {
+        final name = res['profiles']['fullname'] ?? "Unknown Student";
+        
+        // Calculate the percentage for this specific attempt
+        double percentage = (res['score'] / totalQuestions) * 100;
+        res['calculated_percent'] = percentage.clamp(0, 100).toInt();
+
+        if (!grouped.containsKey(name)) grouped[name] = [];
+        grouped[name]!.add(res);
       }
-    } catch (e) {
-      debugPrint("❌ Load Error: $e");
-      _showSnackBar("Could not load quiz details", Colors.red);
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+
+      setState(() {
+        _studentResults = grouped.entries.map((e) {
+          final attempts = e.value;
+          double finalGrade = 0;
+
+          // Apply Teacher's Grading Policy
+          if (_selectedPolicy == 'highest') {
+            finalGrade = attempts
+                .map((a) => (a['calculated_percent'] as int).toDouble())
+                .reduce((a, b) => a > b ? a : b);
+          } 
+          else if (_selectedPolicy == 'average') {
+            double sum = attempts
+                .map((a) => (a['calculated_percent'] as int).toDouble())
+                .reduce((a, b) => a + b);
+            finalGrade = sum / attempts.length;
+          } 
+          else {
+            finalGrade = (attempts.first['calculated_percent'] as int).toDouble();
+          }
+
+          return {
+            'name': e.key,
+            'attempts': attempts,
+            'display_grade': finalGrade.toInt(), 
+          };
+        }).toList();
+      });
+    } else {
+      setState(() {
+        _existingQuizId = null;
+        _tempQuizData = [];
+      });
     }
+  } catch (e) {
+    debugPrint("❌ Load Error: $e");
+    _showSnackBar("Could not load quiz details", Colors.red);
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
   }
+}
 
   Widget _buildQuizSettings() {
   return Card(
@@ -409,16 +451,55 @@ Widget _buildManageView() {
         child: _studentResults.isEmpty
             ? const Center(child: Text("No students have taken this quiz yet."))
             : ListView.builder(
+                padding: const EdgeInsets.symmetric(vertical: 10),
                 itemCount: _studentResults.length,
                 itemBuilder: (context, index) {
-                  final res = _studentResults[index];
-                  final profile = res['profiles'];
-                  final name = profile != null ? profile['fullname'] : "Unknown Student";
-                  return ListTile(
-                    title: Text(name),
-                    subtitle: Text("Completed: ${res['completed_at'].toString().substring(0, 10)}"),
-                    trailing: Text("${res['score']}%", 
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1D5A71))),
+                  final studentEntry = _studentResults[index];
+                  final List attempts = studentEntry['attempts'];
+                  final latestScore = attempts.first['calculated_percent'];
+
+                  return Card(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: Colors.grey.shade200),
+                    ),
+                    child: ExpansionTile(
+                      shape: const Border(), // Remove default borders
+                      leading: CircleAvatar(
+                        backgroundColor: const Color(0xFF1D5A71),
+                        child: Text(studentEntry['name'][0], style: const TextStyle(color: Colors.white)),
+                      ),
+                      title: Text(
+                        studentEntry['name'],
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1D5A71)),
+                      ),
+                      subtitle: Text("${attempts.length} attempts recorded"),
+                      trailing: Text(
+                            "${studentEntry['display_grade']}%", 
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1D5A71)),
+                          ),
+                      children: [
+                        const Divider(height: 1),
+                        Container(
+                          color: const Color(0xFF1D5A71).withOpacity(0.03),
+                          child: Column(
+                            children: attempts.map<Widget>((attempt) {
+                              return ListTile(
+                                dense: true,
+                                leading: const Icon(Icons.history, size: 18),
+                                title: Text("Completed: ${attempt['completed_at'].toString().substring(0, 16)}"),
+                                trailing: Text(
+                                  "${attempt['calculated_percent']}%",
+                                  style: const TextStyle(fontWeight: FontWeight.w600),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ],
+                    ),
                   );
                 },
               ),
