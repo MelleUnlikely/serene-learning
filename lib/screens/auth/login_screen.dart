@@ -31,25 +31,36 @@ class _LoginScreenState extends State<LoginScreen> {
             .eq('email', response.user!.email!)
             .single();  
 
-        if (userData['roletype'] == 'Teacher') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => CreateClassScreen(teacherId: userData['userid'])),
-          );
-        } 
-        else if (userData['roletype'] == 'School Administrator') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => AdminDashboard()),
-          );
-        }
+      if (userData['roletype'] == 'Teacher') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => CreateClassScreen(teacherId: userData['userid'])),
+        );
+      } 
+      else if (userData['roletype'] == 'School Administrator') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+          builder: (context) => AdminDashboard(schoolId: userData['schoolid']),
+        ),
+        );
       }
-    } catch (e) {
-      _showSnackBar("Login Failed: Invalid Credentials. Try again.", Colors.red);
-    } finally {
-      if (mounted) setState(() => _isLoading = false); 
     }
+      } catch (e) {
+      // This helps you see the REAL error in the console
+      debugPrint("Login error details: $e");
+      
+      // Show a more descriptive error to the user
+      String errorMsg = "Login Failed. Please check your email/password.";
+      if (e.toString().contains("PostgrestException")) {
+        errorMsg = "Profile not found. Please contact admin.";
+      }
+      
+      _showSnackBar(errorMsg, Colors.red);
+    } finally {
+    if (mounted) setState(() => _isLoading = false); 
   }
+}
 
   void _showSnackBar(String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 class AdminDashboard extends StatefulWidget {
-  const AdminDashboard({super.key});
+  final int schoolId; 
+  const AdminDashboard({super.key, required this.schoolId});
 
   @override
   State<AdminDashboard> createState() => _AdminDashboardState();
@@ -19,7 +23,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
   @override
   void initState() {
     super.initState();
-    // Only call the initializer, it handles both fetches
     _initializeDashboard();
   }
 
@@ -36,47 +39,84 @@ class _AdminDashboardState extends State<AdminDashboard> {
     }
   }
 
+  Future<void> _generatePDFReport(List<dynamic> data) async {
+  final pdf = pw.Document();
+
+  pdf.addPage(
+    pw.Page(
+      pageFormat: PdfPageFormat.a4,
+      build: (pw.Context context) {
+        return pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Text("School Progress Report", style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
+            pw.SizedBox(height: 10),
+            pw.Text("Generated on: ${DateTime.now().toString()}"),
+            pw.Divider(),
+            pw.SizedBox(height: 20),
+            pw.TableHelper.fromTextArray(
+              headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+              headers: ['Class Name', 'Average Accuracy'],
+              data: data.map((item) => [
+                item['classname'] ?? 'Unnamed',
+                "${(item['average_accuracy'] as num? ?? 0).toStringAsFixed(1)}%"
+              ]).toList(),
+            ),
+          ],
+        );
+      },
+    ),
+  );
+
+  await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdf.save());
+}
+
   Future<void> _fetchCounts() async {
-    try {
-      final studentRes = await Supabase.instance.client
-          .from('profiles')
-          .select()
-          .eq('roletype', 'Student')
-          .count(CountOption.exact);
+  try {
+    final studentRes = await Supabase.instance.client
+        .from('profiles')
+        .select()
+        .eq('roletype', 'Student')
+        .eq('schoolid', widget.schoolId) 
+        .count(CountOption.exact);
 
-      final teacherRes = await Supabase.instance.client
-          .from('profiles')
-          .select()
-          .eq('roletype', 'Teacher')
-          .count(CountOption.exact);
+    final teacherRes = await Supabase.instance.client
+        .from('profiles')
+        .select()
+        .eq('roletype', 'Teacher')
+        .eq('schoolid', widget.schoolId) 
+        .count(CountOption.exact);
 
-      if (mounted) {
-        setState(() {
-          studentCount = studentRes.count;
-          teacherCount = teacherRes.count;
-        });
-      }
-    } catch (e) {
-      debugPrint("Supabase Stats Error: $e");
+    if (mounted) {  
+      setState(() {
+        studentCount = studentRes.count;
+        teacherCount = teacherRes.count;
+      });
     }
+  } catch (e) {
+    debugPrint("Supabase Stats Error: $e");
   }
+}
 
   Future<void> _fetchGraphData() async {
   try {
-    // 1. CHANGE THIS TABLE NAME to match your new SQL View
+    // 1. Fetch from the new class-based view
     final List<dynamic> data = await Supabase.instance.client
-        .from('curriculum_level_performance') 
-        .select();
+        .from('class_performance_stats') 
+        .select()
+        .eq('schoolid', widget.schoolId);
 
     if (mounted) {
       setState(() {
-        labels = data.map((e) => e['curriculumlevel'].toString()).toList();
+        // 2. Map classname instead of curriculumlevel
+        labels = data.map((e) => e['classname']?.toString() ?? 'Unknown Class').toList();
         
         graphData = data.asMap().entries.map((entry) {
           int index = entry.key;
           var row = entry.value;
           
-          double score = (row['average_accuracy'] ?? 0.0).toDouble();
+          // 3. Ensure we use the calculated average_accuracy from SQL
+          double score = (row['average_accuracy'] as num? ?? 0.0).toDouble();
           
           return BarChartGroupData(
             x: index,
@@ -98,18 +138,101 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 }
 
-  void _showUserList(String roletype) {
-    debugPrint("Navigating to $roletype list");
-    // This is where you'll push the new screen we discussed
-    /*
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => UserListScreen(roletype: roletype),
+
+void _showProgressReport() {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: const Row(
+        children: [
+          Icon(Icons.analytics, color: Color(0xFF2D4B5F)),
+          SizedBox(width: 10),
+          Text("School Progress Report"),
+        ],
       ),
-    );
-    */
-  }
+      content: SizedBox(
+        width: 500,
+        child: FutureBuilder(
+          future: Supabase.instance.client
+              .from('class_performance_stats')
+              .select()
+              .eq('schoolid', widget.schoolId),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const SizedBox(height: 100, child: Center(child: CircularProgressIndicator()));
+            }
+            
+            final data = snapshot.data as List<dynamic>? ?? [];
+            if (data.isEmpty) return const Text("No class data available for this school.");
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text("Average Accuracy by Class", 
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                const SizedBox(height: 15),
+                // Wrap the list in a Flexible or constrained box if it gets too long
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 300),
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: data.map((item) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Row(
+                        children: [
+                          Expanded(child: Text(item['classname'] ?? 'Unnamed Class')),
+                          Text(
+                            "${(item['average_accuracy'] as num? ?? 0).toStringAsFixed(1)}%",
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: LinearProgressIndicator(
+                              value: (item['average_accuracy'] as num? ?? 0) / 100,
+                              backgroundColor: Colors.grey[200],
+                              color: const Color(0xFF2D4B5F),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )).toList(),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                // MOVE YOUR BUTTONS HERE
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text("Close"),
+                    ),
+                    const SizedBox(width: 10),
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Generating PDF..."), duration: Duration(seconds: 1)),
+                        );
+                        await _generatePDFReport(data); // Now 'data' is defined!
+                      },
+                      icon: const Icon(Icons.download),
+                      label: const Text("Download PDF"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2D4B5F), 
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ],
+                )
+              ],
+            );
+          },
+        ),
+      ),
+    ),
+  );
+}
 
 
   @override
@@ -123,7 +246,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeader(), // Simplified Header
+                _buildHeader(),
                 const SizedBox(height: 32),
                 _buildKPICards(),
                 const SizedBox(height: 32),
@@ -136,7 +259,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  // 1. Clean Header (Title + Minimal Icons)
+
   Widget _buildHeader() {
     return const Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -161,7 +284,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  // 2. Metric Cards (Clickable)
+
   Widget _buildKPICards() {
     return Wrap(
       spacing: 20,
@@ -172,7 +295,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       value: "$studentCount",
       icon: Icons.school,
       color: const Color(0xFFB3D8EE),
-      onTap: () => _showUserPopup("Student"), // Updated to popup
+      onTap: () => _showUserPopup("Student"), 
     ),
     _kpiCard(
       title: "Total Teachers",
@@ -234,7 +357,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           );
   }
 
-  Widget _buildGraphSection() {
+Widget _buildGraphSection() {
   return Container(
     padding: const EdgeInsets.all(24),
     height: 450,
@@ -277,7 +400,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         barTouchData: BarTouchData(
                           enabled: true,
                           touchTooltipData: BarTouchTooltipData(
-                            // FIX: Use getTooltipColor instead of tooltipBgColor
                             getTooltipColor: (group) => const Color(0xFF2D4B5F),
                             tooltipRoundedRadius: 8,
                             getTooltipItem: (group, groupIndex, rod, rodIndex) {
@@ -305,33 +427,37 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         titlesData: FlTitlesData(
                           show: true,
                           bottomTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              getTitlesWidget: (value, meta) {
-                                int index = value.toInt();
-                                if (index >= 0 && index < labels.length) {
-                                  return Padding(
-                                    padding: const EdgeInsets.only(top: 10.0),
-                                    child: Text(
-                                      labels[index],
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF2D4B5F),
-                                      ),
-                                    ),
-                                  );
-                                }
-                                return const Text("");
-                              },
-                            ),
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 60, // Space for the rotated text
+                            getTitlesWidget: (value, meta) {
+                            int index = value.toInt();
+                            
+                            if (index >= 0 && index < labels.length) {
+                              return SideTitleWidget(
+                                meta: meta, 
+                                space: 12,
+                                angle: 0.5, 
+                                child: Text(
+                                  labels[index],
+                                  style: const TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF2D4B5F),
+                                  ),
+                                ),
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          },
                           ),
+                        ),
                           leftTitles: AxisTitles(
                             sideTitles: SideTitles(
                               showTitles: true,
-                              reservedSize: 35,
+                              reservedSize: 40,
                               getTitlesWidget: (value, meta) {
-                                if (value == 0 || value == 50 || value == 100) {
+                                if (value % 25 == 0) { 
                                   return Text(
                                     "${value.toInt()}%",
                                     style: const TextStyle(
@@ -340,14 +466,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                     ),
                                   );
                                 }
-                                return const Text("");
+                                return const SizedBox.shrink();
                               },
                             ),
                           ),
-                          topTitles: const AxisTitles(
-                              sideTitles: SideTitles(showTitles: false)),
-                          rightTitles: const AxisTitles(
-                              sideTitles: SideTitles(showTitles: false)),
+                          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                         ),
                       ),
                     ),
@@ -357,22 +481,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
   );
 }
 
-BarChartGroupData _makeGroupData(int x, double y, String label) {
-    return BarChartGroupData(
-      x: x, 
-      barRods: [
-        BarChartRodData(
-          toY: y,
-          color: const Color(0xFF2D4B5F),
-          width: 22,
-          borderRadius: const BorderRadius.only(topLeft: Radius.circular(4), topRight: Radius.circular(4)),
-        )
-      ],
-      // You can store the label in the tooltip or use titlesData
-    );
-  }
-
-
   Widget _buildQuickActions() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -381,9 +489,11 @@ BarChartGroupData _makeGroupData(int x, double y, String label) {
         children: [
           const Text("Administrative Tools", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 15),
-          _actionTile(Icons.assignment_outlined, "Generate Progress Report"),
-          _actionTile(Icons.calendar_today_outlined, "Academic Calendar"),
-          _actionTile(Icons.settings_outlined, "System Configurations"),
+            _actionTile(
+              Icons.assignment_outlined, 
+              "Generate Progress Report",
+              onTap: () => _showProgressReport(),
+            ),
           const Divider(height: 40),
           ElevatedButton.icon(
             onPressed: () => Supabase.instance.client.auth.signOut(),
@@ -400,14 +510,14 @@ BarChartGroupData _makeGroupData(int x, double y, String label) {
     );
   }
 
-  Widget _actionTile(IconData icon, String label) {
-    return ListTile(
-      leading: Icon(icon, color: const Color(0xFF2D4B5F)),
-      title: Text(label, style: const TextStyle(fontSize: 14)),
-      trailing: const Icon(Icons.chevron_right, size: 18),
-      onTap: () {},
-    );
-  }
+  Widget _actionTile(IconData icon, String label, {VoidCallback? onTap}) {
+  return ListTile(
+    leading: Icon(icon, color: const Color(0xFF2D4B5F)),
+    title: Text(label, style: const TextStyle(fontSize: 14)),
+    trailing: const Icon(Icons.chevron_right, size: 18),
+    onTap: onTap, 
+  );
+}
 
 void _showUserPopup(String roletype) {
   showDialog(
@@ -436,7 +546,8 @@ void _showUserPopup(String roletype) {
                   future: Supabase.instance.client
                       .from('profiles')
                       .select('email, fullname, schoolid, status')
-                      .eq('roletype', roletype),
+                      .eq('roletype', roletype)
+                      .eq('schoolid', widget.schoolId),
                   builder: (context, snapshot) {
                     if (snapshot.hasError) {
                       return Center(child: Text("Error: ${snapshot.error}"));
@@ -468,7 +579,7 @@ void _showUserPopup(String roletype) {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(user['email']),
-                              Text("ID: ${user['schoolid']} | Status: ${user['status']}", 
+                              Text("Status: ${user['status']}", 
                                 style: const TextStyle(fontSize: 12, color: Colors.grey)),
                             ],
                           ),
