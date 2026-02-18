@@ -343,7 +343,7 @@ Widget _buildGenerateView() {
           children: [
             const Icon(Icons.quiz_outlined, size: 80, color: Colors.grey),
             const SizedBox(height: 16),
-            const Text("No quiz has been created for this lesson yet."),
+            const Text("No quiz has been created for this lesson yet.", style: TextStyle(color: Colors.grey),),
             const SizedBox(height: 24),
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
@@ -433,7 +433,7 @@ Widget _buildManageView() {
                 Expanded(
                   child: Text(
                     "Current Policy: ${_selectedPolicy.toUpperCase()}\nMax Attempts: ${_maxAttempts == 99 ? 'Unlimited' : _maxAttempts}",
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+                    style: const TextStyle(fontWeight: FontWeight.w600, color:  Color(0xFF1D5A71)),
                   ),
                 ),
                 IconButton(
@@ -466,7 +466,7 @@ Widget _buildManageView() {
                       side: BorderSide(color: Colors.grey.shade200),
                     ),
                     child: ExpansionTile(
-                      shape: const Border(), // Remove default borders
+                      shape: const Border(),
                       leading: CircleAvatar(
                         backgroundColor: const Color(0xFF1D5A71),
                         child: Text(studentEntry['name'][0], style: const TextStyle(color: Colors.white)),

@@ -16,40 +16,40 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
 
-Future<void> _handleLogin() async {
-  setState(() => _isLoading = true);
-  try {
-    final response = await Supabase.instance.client.auth.signInWithPassword(
-      email: _emailController.text.trim(),
-      password: _passwordController.text.trim(),
-    );
+  Future<void> _handleLogin() async {
+    setState(() => _isLoading = true);
+    try {
+      final response = await Supabase.instance.client.auth.signInWithPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
 
-    if (response.user != null) {
-      final userData = await Supabase.instance.client
-          .from('profiles')
-          .select('roletype, userid, schoolid')
-          .eq('email', response.user!.email!)
-          .single();  
+      if (response.user != null) {
+        final userData = await Supabase.instance.client
+            .from('profiles')
+            .select('roletype, userid, schoolid')
+            .eq('email', response.user!.email!)
+            .single();  
 
-      if (userData['roletype'] == 'Teacher') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => CreateClassScreen(teacherId: userData['userid'])),
-        );
-      } 
-      else if (userData['roletype'] == 'School Administrator') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => AdminDashboard()),
-        );
+        if (userData['roletype'] == 'Teacher') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => CreateClassScreen(teacherId: userData['userid'])),
+          );
+        } 
+        else if (userData['roletype'] == 'School Administrator') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => AdminDashboard()),
+          );
+        }
       }
+    } catch (e) {
+      _showSnackBar("Login Failed: Invalid Credentials. Try again.", Colors.red);
+    } finally {
+      if (mounted) setState(() => _isLoading = false); 
     }
-  } catch (e) {
-    _showSnackBar("Login Failed: Invalid Credentials. Try again.", Colors.red);
-  } finally {
-    if (mounted) setState(() => _isLoading = false); 
   }
-}
 
   void _showSnackBar(String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -62,7 +62,6 @@ Future<void> _handleLogin() async {
         backgroundColor: color,
         behavior: SnackBarBehavior.floating,
         
-        // We set a massive bottom margin to push it to the top of the screen
         margin: EdgeInsets.only(
           bottom: 120, //para mapunta sa taas ung snackbar
           left: 590,
@@ -129,10 +128,10 @@ Future<void> _handleLogin() async {
                           color: Color(0xFF1D5A71)
                         ),
                       ),
-                      //const SizedBox(height: 5),
                       
                       //for username field
                       TextField(
+                        cursorColor: Color(0xFF1D5A71),
                         controller: _emailController,
                         decoration: const InputDecoration(
                           labelText: "Email", //changed from username into email.
@@ -140,19 +139,26 @@ Future<void> _handleLogin() async {
                           enabledBorder: UnderlineInputBorder(
                             borderSide: BorderSide(color: Color(0XFF7AA9CA), width: 1),
                           ),
+                          focusedBorder: UnderlineInputBorder(
+                            borderSide: const BorderSide(color: Color(0xFF1D5A71), width: 2)
+                          ),
                         ),
                       ),
                       const SizedBox(height: 25),
                       
                       //for password na field
                       TextField(
+                        cursorColor: Color(0xFF1D5A71),
                         controller: _passwordController,
                         obscureText: true,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: "Password",
                           labelStyle: TextStyle(color: Color(0xFF1D5A71), fontWeight: FontWeight.bold),
                           enabledBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(color: Color(0XFF7AA9CA), width: 1),
+                            borderSide: const BorderSide(color: Color(0XFF7AA9CA), width: 1),
+                          ),
+                          focusedBorder: UnderlineInputBorder(
+                            borderSide: const BorderSide(color: Color(0xFF1D5A71), width: 2)
                           ),
                         ),
                       ),

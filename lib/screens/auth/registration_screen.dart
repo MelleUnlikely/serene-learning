@@ -193,10 +193,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       //Dropdown for school selection
                       DropdownButtonFormField<int>(
                         initialValue: _selectedSchoolId,
+                        dropdownColor: Colors.white,
                         decoration: const InputDecoration(
                           labelText: "Select School",
                           labelStyle: TextStyle(color: Color(0xFF1D5A71), fontSize: 14, fontWeight: FontWeight.bold),
                           enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0XFF7AA9CA))),
+                          focusedBorder: UnderlineInputBorder(
+                            borderSide: const BorderSide(color: Color(0xFF1D5A71), width: 2)
+                          ),
                         ),
                         items: _schools.map((s) => DropdownMenuItem<int>(
                           value: s['schoolid'], 
@@ -272,6 +276,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   // Helper to keep the code clean and consistent
   Widget _buildInputField(TextEditingController controller, String label, {bool isObscure = false}) {
     return TextField(
+      cursorColor: Color(0xFF1D5A71),
       controller: controller,
       obscureText: isObscure,
       decoration: InputDecoration(
@@ -279,6 +284,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         labelStyle: const TextStyle(color: Color(0xFF1D5A71), fontSize: 14, fontWeight: FontWeight.bold),
         enabledBorder: const UnderlineInputBorder(
           borderSide: BorderSide(color: Color(0XFF7AA9CA), width: 1),
+        ),
+        focusedBorder: UnderlineInputBorder(
+          borderSide: const BorderSide(color: Color(0xFF1D5A71), width: 2)
         ),
       ),
     );
