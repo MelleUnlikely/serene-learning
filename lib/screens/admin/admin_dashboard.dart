@@ -123,7 +123,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             barRods: [
               BarChartRodData(
                 toY: score,
-                color: const Color(0xFF2D4B5F),
+                color: const Color(0xFF1D5A71),
                 width: 22,
                 borderRadius: BorderRadius.circular(4),
               )
@@ -146,9 +146,9 @@ void _showProgressReport() {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: const Row(
         children: [
-          Icon(Icons.analytics, color: Color(0xFF2D4B5F)),
+          Icon(Icons.analytics, color: Color(0xFF1D5A71)),
           SizedBox(width: 10),
-          Text("School Progress Report"),
+          Text("School Progress Report", style: TextStyle(color: Color(0xFF1D5A71)),),
         ],
       ),
       content: SizedBox(
@@ -170,7 +170,7 @@ void _showProgressReport() {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text("Average Accuracy by Class", 
-                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                  style: TextStyle(color: Color(0xFF1D5A71))),
                 const SizedBox(height: 15),
                 // Wrap the list in a Flexible or constrained box if it gets too long
                 ConstrainedBox(
@@ -181,17 +181,19 @@ void _showProgressReport() {
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: Row(
                         children: [
-                          Expanded(child: Text(item['classname'] ?? 'Unnamed Class')),
+                          Expanded(child: Text(item['classname'] ?? 'Unnamed Class',
+                            style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1D5A71)),
+                          )),
                           Text(
                             "${(item['average_accuracy'] as num? ?? 0).toStringAsFixed(1)}%",
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1D5A71)),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: LinearProgressIndicator(
                               value: (item['average_accuracy'] as num? ?? 0) / 100,
                               backgroundColor: Colors.grey[200],
-                              color: const Color(0xFF2D4B5F),
+                              color: const Color(0xFF1D5A71),
                             ),
                           ),
                         ],
@@ -206,7 +208,7 @@ void _showProgressReport() {
                   children: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text("Close"),
+                      child: const Text("Close", style: TextStyle(color: Color(0xFF1D5A71)),),
                     ),
                     const SizedBox(width: 10),
                     ElevatedButton.icon(
@@ -219,7 +221,7 @@ void _showProgressReport() {
                       icon: const Icon(Icons.download),
                       label: const Text("Download PDF"),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2D4B5F), 
+                        backgroundColor: const Color(0xFF1D5A71), 
                         foregroundColor: Colors.white,
                       ),
                     ),
@@ -268,16 +270,16 @@ void _showProgressReport() {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text("Serene", 
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF2D4B5F))),
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF1D5A71))),
             Text("School Administrator Portal", 
               style: TextStyle(fontSize: 14, color: Colors.grey)),
           ],
         ),
         Row(
           children: [
-            Icon(Icons.notifications_none, color: Colors.blueGrey),
+            Icon(Icons.notifications_none, color: Color(0xFF1D5A71)),
             SizedBox(width: 15),
-            Icon(Icons.account_circle_outlined, color: Colors.blueGrey, size: 30),
+            Icon(Icons.account_circle_outlined, color: Color(0xFF1D5A71), size: 30),
           ],
         ),
       ],
@@ -301,7 +303,7 @@ void _showProgressReport() {
       title: "Total Teachers",
       value: "$teacherCount",
       icon: Icons.person,
-      color: const Color(0xFF94AFB9),
+      color: const Color(0xFFB3D8EE),
       onTap: () => _showUserPopup("Teacher"), // Updated to popup
     ),
       ],
@@ -328,8 +330,8 @@ void _showProgressReport() {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-                Text(value, style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold)),
+                Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Color(0xFF1D5A71))),
+                Text(value, style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Color(0xFF1D5A71))),
               ],
             ),
             Icon(icon, size: 45, color: Colors.black26),
@@ -376,7 +378,7 @@ Widget _buildGraphSection() {
       children: [
         const Text(
           "Academic Performance Index",
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1D5A71)),
         ),
         const Text(
           "Real-time Average Accuracy (%)",
@@ -400,7 +402,7 @@ Widget _buildGraphSection() {
                         barTouchData: BarTouchData(
                           enabled: true,
                           touchTooltipData: BarTouchTooltipData(
-                            getTooltipColor: (group) => const Color(0xFF2D4B5F),
+                            getTooltipColor: (group) => const Color(0xFF1D5A71),
                             tooltipRoundedRadius: 8,
                             getTooltipItem: (group, groupIndex, rod, rodIndex) {
                               return BarTooltipItem(
@@ -443,7 +445,7 @@ Widget _buildGraphSection() {
                                   style: const TextStyle(
                                     fontSize: 9,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFF2D4B5F),
+                                    color: Color(0xFF1D5A71),
                                   ),
                                 ),
                               );
@@ -487,14 +489,16 @@ Widget _buildGraphSection() {
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
       child: Column(
         children: [
-          const Text("Administrative Tools", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text("Administrative Tools",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1D5A71))
+          ),
           const SizedBox(height: 15),
             _actionTile(
               Icons.assignment_outlined, 
               "Generate Progress Report",
               onTap: () => _showProgressReport(),
             ),
-          const Divider(height: 40),
+          const Divider(height: 40, color: Color(0xFF1D5A71),),
           ElevatedButton.icon(
             onPressed: () => Supabase.instance.client.auth.signOut(),
             icon: const Icon(Icons.logout),
@@ -512,9 +516,9 @@ Widget _buildGraphSection() {
 
   Widget _actionTile(IconData icon, String label, {VoidCallback? onTap}) {
   return ListTile(
-    leading: Icon(icon, color: const Color(0xFF2D4B5F)),
-    title: Text(label, style: const TextStyle(fontSize: 14)),
-    trailing: const Icon(Icons.chevron_right, size: 18),
+    leading: Icon(icon, color: const Color(0xFF1D5A71)),
+    title: Text(label, style: const TextStyle(fontSize: 14, color: Color(0xFF1D5A71))),
+    trailing: const Icon(Icons.chevron_right, size: 18, color: Color(0xFF1D5A71)),
     onTap: onTap, 
   );
 }
@@ -536,8 +540,8 @@ void _showUserPopup(String roletype) {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text("$roletype Directory", 
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF2D4B5F))),
-                  IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1D5A71))),
+                  IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close, color: Color(0xFF1D5A71),)),
                 ],
               ),
               const Divider(),
@@ -563,18 +567,18 @@ void _showUserPopup(String roletype) {
 
                     return ListView.separated(
                       itemCount: users.length,
-                      separatorBuilder: (context, index) => const Divider(color: Color(0xFFF1F1F1)),
+                      separatorBuilder: (context, index) => const Divider(color: Color(0xFF1D5A71)),
                       itemBuilder: (context, index) {
                         final user = users[index];
                         return ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: CircleAvatar(
-                            backgroundColor: const Color(0xFF2D4B5F),
+                            backgroundColor: const Color(0xFF1D5A71),
                             child: Text(user['fullname']?[0] ?? user['email'][0].toUpperCase(), 
                               style: const TextStyle(color: Colors.white)),
                           ),
                           title: Text(user['fullname'] ?? 'No Name Provided', 
-                            style: const TextStyle(fontWeight: FontWeight.bold)),
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1D5A71))),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
