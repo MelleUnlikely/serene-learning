@@ -138,6 +138,82 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 }
 
+Future<void> _handleLogout(BuildContext context) async {
+    final supabase = Supabase.instance.client;
+
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        titlePadding: EdgeInsets.zero,
+        title: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: const BoxDecoration(
+            color: Color(0xFFD0EDF9),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(15),
+              topRight: Radius.circular(15),
+            ),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.logout, color: Color(0xFF1D5A71)),
+              SizedBox(width: 12),
+              Text(
+                "Log Out",
+                style: TextStyle(color: Color(0xFF1D5A71), fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ),
+        content: const Padding(
+          padding: EdgeInsets.only(top: 20.0),
+          child: Text(
+            "Are you sure you want to sign out?",
+            style: TextStyle(color: Color(0xFF1D5A71), fontSize: 16)
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel", style: TextStyle(color: Color(0xFF1D5A71))),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Logout", style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await supabase.auth.signOut();
+
+        if (context.mounted) {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/login',
+            (route) => false,
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Error logging out: $e"), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
+  }
+
 
 void _showProgressReport() {
   showDialog(
@@ -500,7 +576,7 @@ void _showProgressReport() {
             ),
           const Divider(height: 40, color: Color(0xFF1D5A71),),
           ElevatedButton.icon(
-            onPressed: () => Supabase.instance.client.auth.signOut(),
+            onPressed: () => _handleLogout(context),
             icon: const Icon(Icons.logout),
             label: const Text("Logout"),
             style: ElevatedButton.styleFrom(
@@ -599,6 +675,7 @@ void _showUserPopup(String roletype) {
       );
     },
   );
+  
 }
 
 }
