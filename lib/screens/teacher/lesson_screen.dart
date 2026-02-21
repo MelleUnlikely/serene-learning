@@ -80,13 +80,17 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
           child: Padding(
             padding: const EdgeInsets.only(top: 5.0),
             child: TextField(
+              cursorColor: Color(0xFF1D5A71),
               controller: titleController,
               decoration: const InputDecoration(
                 labelText: "Lesson Title",
                 labelStyle: TextStyle(color: Color(0xFF1D5A71)),
-                focusedBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFF1D5A71)),
-                ),
+                enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Color(0XFF7AA9CA), width: 1),
+                  ),
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: const BorderSide(color: Color(0xFF1D5A71), width: 2)
+                  ),
               ),
             ),
           ),    

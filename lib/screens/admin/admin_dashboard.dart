@@ -458,7 +458,7 @@ void _showProgressReport() {
           ),
           const Text(
             "Real-time Average Accuracy (%)",
-            style: TextStyle(color: Colors.grey),
+            style: TextStyle(color: Color(0xFF1D5A71)),
           ),
           const SizedBox(height: 40),
           Expanded(
@@ -539,7 +539,7 @@ void _showProgressReport() {
                                     return Text(
                                       "${value.toInt()}%",
                                       style: const TextStyle(
-                                        fontSize: 10,
+                                        fontSize: 14,
                                         color: Colors.grey,
                                       ),
                                     );

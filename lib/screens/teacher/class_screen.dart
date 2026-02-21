@@ -57,7 +57,7 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
     try {
       await Supabase.instance.client.from('class').delete().eq('classid', classId);
       _fetchMyClasses();
-      _showSnackBar("Class deleted", Colors.blueGrey);
+      _showSnackBar("Class deleted", Colors.orange);
     } catch (e) {
       _showSnackBar("Could not delete class", Colors.red);
     }
@@ -284,9 +284,35 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
                                           context: context,
                                           builder: (BuildContext context) {
                                             return AlertDialog(
-                                              title: const Text("Delete Class?"),
-                                              content: const Text(
-                                                "This action cannot be undone. All lessons and student enrollments linked to this class will be permanently deleted.",
+                                              backgroundColor: Colors.white,
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                                              titlePadding: EdgeInsets.zero,
+                                              title: Container(
+                                                padding: const EdgeInsets.all(20),
+                                                decoration: const BoxDecoration(
+                                                  color: Color(0xFFD0EDF9),
+                                                  borderRadius: BorderRadius.only(
+                                                    topLeft: Radius.circular(15),
+                                                    topRight: Radius.circular(15),
+                                                  ),
+                                                ),
+                                                child: const Row(
+                                                  children: [
+                                                    Icon(Icons.delete_forever, color: Color(0xFF1D5A71)),
+                                                    SizedBox(width: 10),
+                                                    Text(
+                                                      "Delete Class?",
+                                                      style: TextStyle(color: Color(0xFF1D5A71), fontSize: 18, fontWeight: FontWeight.bold),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              content: const Padding(
+                                                padding: EdgeInsets.only(top: 5.0),
+                                                child: Text(
+                                                  "This action cannot be undone. All lessons and student enrollments linked to this class will be permanently deleted.",
+                                                  style: TextStyle(color: Color(0xFF1D5A71), fontSize: 16)
+                                                ),
                                               ),
                                               actions: [
                                                 // Cancel Button
