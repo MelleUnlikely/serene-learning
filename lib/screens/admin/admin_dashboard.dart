@@ -100,7 +100,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   Future<void> _fetchGraphData() async {
   try {
-    // 1. Fetch from the new class-based view
+    //Fetch from the new class-based view
     final List<dynamic> data = await Supabase.instance.client
         .from('class_performance_stats') 
         .select()
@@ -108,14 +108,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
     if (mounted) {
       setState(() {
-        // 2. Map classname instead of curriculumlevel
+        //Map classname instead of curriculumlevel
         labels = data.map((e) => e['classname']?.toString() ?? 'Unknown Class').toList();
         
         graphData = data.asMap().entries.map((entry) {
           int index = entry.key;
           var row = entry.value;
           
-          // 3. Ensure we use the calculated average_accuracy from SQL
+          //Ensure that the calculated average_accuracy from SQL was used
           double score = (row['average_accuracy'] as num? ?? 0.0).toDouble();
           
           return BarChartGroupData(
@@ -172,7 +172,7 @@ void _showProgressReport() {
                 const Text("Average Accuracy by Class", 
                   style: TextStyle(color: Color(0xFF1D5A71))),
                 const SizedBox(height: 15),
-                // Wrap the list in a Flexible or constrained box if it gets too long
+                //list in a Flexible or constrained box if it gets too long
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxHeight: 300),
                   child: ListView(
@@ -202,7 +202,7 @@ void _showProgressReport() {
                   ),
                 ),
                 const SizedBox(height: 20),
-                // MOVE YOUR BUTTONS HERE
+                //buttons here!
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -216,7 +216,7 @@ void _showProgressReport() {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text("Generating PDF..."), duration: Duration(seconds: 1)),
                         );
-                        await _generatePDFReport(data); // Now 'data' is defined!
+                        await _generatePDFReport(data); //'data' is defined here!
                       },
                       icon: const Icon(Icons.download),
                       label: const Text("Download PDF"),
@@ -343,7 +343,7 @@ void _showProgressReport() {
 
   
 
-  // 3. Graph and Action Summary
+  //Graph and Action Summary
   Widget _buildMainContent(BoxConstraints constraints) {
     bool isMobile = constraints.maxWidth < 900;
     
@@ -359,129 +359,129 @@ void _showProgressReport() {
           );
   }
 
-Widget _buildGraphSection() {
-  return Container(
-    padding: const EdgeInsets.all(24),
-    height: 450,
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.02),
-          blurRadius: 10,
-        )
-      ],
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Academic Performance Index",
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1D5A71)),
-        ),
-        const Text(
-          "Real-time Average Accuracy (%)",
-          style: TextStyle(color: Colors.grey),
-        ),
-        const SizedBox(height: 40),
-        Expanded(
-          child: isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : graphData.isEmpty
-                  ? const Center(child: Text("No performance data found"))
-                  : BarChart(
-                      BarChartData(
-                        maxY: 100,
-                        minY: 0,
-                        alignment: BarChartAlignment.spaceAround,
-                        groupsSpace: 12,
-                        gridData: const FlGridData(show: false),
-                        borderData: FlBorderData(show: false),
-                        barGroups: graphData,
-                        barTouchData: BarTouchData(
-                          enabled: true,
-                          touchTooltipData: BarTouchTooltipData(
-                            getTooltipColor: (group) => const Color(0xFF1D5A71),
-                            tooltipRoundedRadius: 8,
-                            getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                              return BarTooltipItem(
-                                "${labels[groupIndex]}\n",
-                                const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                                children: [
-                                  TextSpan(
-                                    text: "${rod.toY.toStringAsFixed(1)}%",
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                        ),
-                        titlesData: FlTitlesData(
-                          show: true,
-                          bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 60, // Space for the rotated text
-                            getTitlesWidget: (value, meta) {
-                            int index = value.toInt();
-                            
-                            if (index >= 0 && index < labels.length) {
-                              return SideTitleWidget(
-                                meta: meta, 
-                                space: 12,
-                                angle: 0.5, 
-                                child: Text(
-                                  labels[index],
-                                  style: const TextStyle(
-                                    fontSize: 9,
+  Widget _buildGraphSection() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      height: 450,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+          )
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Academic Performance Index",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1D5A71)),
+          ),
+          const Text(
+            "Real-time Average Accuracy (%)",
+            style: TextStyle(color: Colors.grey),
+          ),
+          const SizedBox(height: 40),
+          Expanded(
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : graphData.isEmpty
+                    ? const Center(child: Text("No performance data found"))
+                    : BarChart(
+                        BarChartData(
+                          maxY: 100,
+                          minY: 0,
+                          alignment: BarChartAlignment.spaceAround,
+                          groupsSpace: 12,
+                          gridData: const FlGridData(show: false),
+                          borderData: FlBorderData(show: false),
+                          barGroups: graphData,
+                          barTouchData: BarTouchData(
+                            enabled: true,
+                            touchTooltipData: BarTouchTooltipData(
+                              getTooltipColor: (group) => const Color(0xFF1D5A71),
+                              tooltipRoundedRadius: 8,
+                              getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                                return BarTooltipItem(
+                                  "${labels[groupIndex]}\n",
+                                  const TextStyle(
+                                    color: Colors.white,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1D5A71),
+                                    fontSize: 14,
                                   ),
-                                ),
-                              );
-                            }
-                            return const SizedBox.shrink();
-                          },
-                          ),
-                        ),
-                          leftTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              reservedSize: 40,
-                              getTitlesWidget: (value, meta) {
-                                if (value % 25 == 0) { 
-                                  return Text(
-                                    "${value.toInt()}%",
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      color: Colors.grey,
+                                  children: [
+                                    TextSpan(
+                                      text: "${rod.toY.toStringAsFixed(1)}%",
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 12,
+                                      ),
                                     ),
-                                  );
-                                }
-                                return const SizedBox.shrink();
+                                  ],
+                                );
                               },
                             ),
                           ),
-                          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          titlesData: FlTitlesData(
+                            show: true,
+                            bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 60, // Space for the rotated text
+                              getTitlesWidget: (value, meta) {
+                              int index = value.toInt();
+                              
+                              if (index >= 0 && index < labels.length) {
+                                return SideTitleWidget(
+                                  meta: meta, 
+                                  space: 12,
+                                  angle: 0.5, 
+                                  child: Text(
+                                    labels[index],
+                                    style: const TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF1D5A71),
+                                    ),
+                                  ),
+                                );
+                              }
+                              return const SizedBox.shrink();
+                            },
+                            ),
+                          ),
+                            leftTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                reservedSize: 40,
+                                getTitlesWidget: (value, meta) {
+                                  if (value % 25 == 0) { 
+                                    return Text(
+                                      "${value.toInt()}%",
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.grey,
+                                      ),
+                                    );
+                                  }
+                                  return const SizedBox.shrink();
+                                },
+                              ),
+                            ),
+                            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          ),
                         ),
                       ),
-                    ),
-        ),
-      ],
-    ),
-  );
-}
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildQuickActions() {
     return Container(

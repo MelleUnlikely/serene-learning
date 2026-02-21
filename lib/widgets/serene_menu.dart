@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../screens/about.dart';
+
 
 class SereneDrawer extends StatelessWidget {
   const SereneDrawer({super.key});
@@ -111,7 +113,13 @@ class SereneDrawer extends StatelessWidget {
           const SizedBox(height: 20),
           _buildMenuItem(Icons.person_outline, "Account", () {}),
           const Divider(indent: 20, endIndent: 20, thickness: 1, color: Color(0xFF1D5A71)),
-          _buildMenuItem(Icons.help_outline, "About", () {}),
+          _buildMenuItem(Icons.help_outline, "About",
+            () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AboutPage()));
+            }),
           _buildMenuItem(Icons.logout, "Logout", () => _handleLogout(context)),
         ],
       ),
