@@ -5,6 +5,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:flutter_application_1/widgets/serene_menu.dart';
+import 'package:flutter_application_1/widgets/serene_header.dart';
 
 class AdminDashboard extends StatefulWidget {
   final int schoolId; 
@@ -22,7 +23,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
   List<BarChartGroupData> graphData = [];
   List<String> labels = [];
   final GlobalKey<ScaffoldState> _scaffoldkey = GlobalKey<ScaffoldState>();
-
 
   @override
   void initState() {
@@ -165,15 +165,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.analytics, color: Color(0xFF1D5A71)),
-            SizedBox(width: 10),
-            Text("School Progress Report", style: TextStyle(color: Color(0xFF1D5A71)),),
-          ],
-        ),
-        content: SizedBox(
+        contentPadding: EdgeInsets.zero,
+        content: Container(
           width: 500,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.all(16),
           child: FutureBuilder(
             future: Supabase.instance.client
                 .from('class_performance_stats')
@@ -189,70 +188,92 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
               return Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text("Average Accuracy by Class", 
-                    style: TextStyle(color: Color(0xFF1D5A71))),
-                  const SizedBox(height: 15),
-                  //list in a Flexible or constrained box if it gets too long
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 300),
-                    child: ListView(
-                      shrinkWrap: true,
-                      children: data.map((item) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8.0),
-                        child: Row(
-                          children: [
-                            Expanded(child: Text(item['classname'] ?? 'Unnamed Class',
-                              style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1D5A71)),
-                            )),
-                            Text(
-                              "${(item['average_accuracy'] as num? ?? 0).toStringAsFixed(1)}%",
-                              style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1D5A71)),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: LinearProgressIndicator(
-                                value: (item['average_accuracy'] as num? ?? 0) / 100,
-                                backgroundColor: Colors.grey[200],
-                                color: const Color(0xFF1D5A71),
-                              ),
-                            ),
-                          ],
+                  Row( //eto title
+                    children: [
+                      Icon(Icons.analytics_rounded, color: Color(0xFF1D5A71), size: 28),
+                      SizedBox(width: 12),
+                      Text("School Progress Report", 
+                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1D5A71))),
+                    ],
+                  ),
+
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Column(
+                      children: [
+                        const Text("Average Accuracy by Class", 
+                          style: TextStyle(color: Color(0xFF1D5A71), fontWeight: FontWeight.w500)),
+                        const SizedBox(height: 20),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 300),
+                          child: ListView(
+                            shrinkWrap: true,
+                            children: data.map((item) => _buildReportRow(item)).toList(),
+                          ),
                         ),
-                      )).toList(),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  //buttons here!
-                  Row(
+
+                  Row( //eto ung buttons
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text("Close", style: TextStyle(color: Color(0xFF1D5A71)),),
+                        child: const Text("Close", style: TextStyle(color: Color(0xFF1D5A71), fontWeight: FontWeight.bold)),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 16),
                       ElevatedButton.icon(
-                        onPressed: () async {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Generating PDF..."), duration: Duration(seconds: 1)),
-                          );
-                          await _generatePDFReport(data); //'data' is defined here!
-                        },
-                        icon: const Icon(Icons.download),
+                        onPressed: () async => await _generatePDFReport(data),
+                        icon: const Icon(Icons.download_rounded),
                         label: const Text("Download PDF"),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1D5A71), 
+                          backgroundColor: const Color(0xFF1D5A71),
                           foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                       ),
                     ],
-                  )
+                  ),
                 ],
               );
             },
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildReportRow(dynamic item) {
+    double accuracy = (item['average_accuracy'] as num? ?? 0).toDouble();
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10.0),
+      child: Row(
+        children: [
+          Expanded(flex: 2, child: Text(item['classname'] ?? 'Unnamed', 
+            style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1D5A71)))),
+          Expanded(child: Text("${accuracy.toStringAsFixed(1)}%", 
+            style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1D5A71)))),
+          Expanded(
+            flex: 3,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: LinearProgressIndicator(
+                value: accuracy / 100,
+                minHeight: 8,
+                backgroundColor: const Color(0xFFE0E0E0),
+                color: const Color(0xFF1D5A71),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -263,65 +284,31 @@ class _AdminDashboardState extends State<AdminDashboard> {
       key: _scaffoldkey,
       backgroundColor: const Color(0xFFF5F7FB),
       endDrawer: const SereneDrawer(),
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: false,   
-        title: Row(
-          children: [
-            Image.asset(
-              'assets/images/logo.png',
-              height: 35,
-            ),
-            const SizedBox(width: 10),
-            const Text(
-              "Serene",
-              style: TextStyle(
-                color: Color(0xFF1D5A71),
-                fontWeight: FontWeight.bold,
-                fontSize: 24,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none, color: Color(0xFF1D5A71)),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.menu, color: Color(0xFF1D5A71)),
-            onPressed: () {
-              _scaffoldkey.currentState?.openEndDrawer(); // Now this will work!
-            },
-          ),
-          const SizedBox(width: 15),
-        ],
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(1.0),
-          child: Divider(height: 1, color: Color(0xFF1D5A71)),
-        ),
-      ),
+      appBar: SereneHeader(scaffoldKey: _scaffoldkey),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 10),
-                _buildKPICards(),
-                const SizedBox(height: 25),
-                _buildMainContent(constraints),
-              ],
+          return Container(
+            width: double.infinity,
+            height: constraints.maxHeight,
+            color: Colors.white,
+            child: 
+            SingleChildScrollView(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 10),
+                  _buildKPICards(),
+                  const SizedBox(height: 25),
+                  _buildMainContent(constraints),
+                ],
+              ),
             ),
           );
         },
       ),
     );
   }
-
 
   Widget _buildKPICards() {
     return Wrap(
@@ -376,8 +363,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ),
     );
   }
-
-  
 
   //Graph and Action Summary
   Widget _buildMainContent(BoxConstraints constraints) {
@@ -505,7 +490,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                 },
                               ),
                             ),
-                            // 2. Corrected Left Titles (Y-Axis)
                             leftTitles: AxisTitles(
                               sideTitles: SideTitles(
                                 showTitles: true,
@@ -578,6 +562,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
           child: Container(
             width: MediaQuery.of(context).size.width * 0.4,
             height: MediaQuery.of(context).size.height * 0.7,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
             padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

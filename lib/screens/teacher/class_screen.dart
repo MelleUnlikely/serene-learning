@@ -1,6 +1,7 @@
 import 'dart:ui_web';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/serene_header.dart';
 import 'package:flutter_application_1/widgets/serene_menu.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:math';
@@ -101,40 +102,7 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
       backgroundColor: Colors.white,
       key: _scaffoldkey,
       endDrawer: const SereneDrawer(),
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: false,
-        title: const Text(
-          "Serene",
-          style: TextStyle(
-            color: Color(0xFF1D5A71),
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none, color: Color(0xFF1D4E5F)),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.menu, color: Color(0xFF1D4E5F)),
-            onPressed: () {
-              _scaffoldkey.currentState?.openEndDrawer();
-            },
-          ),
-          const SizedBox(width: 15),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1.0),
-          child: Container(
-            color: Color(0xFF1D5A71),
-            height: 1.0,
-          )),
-      ),
-
+      appBar: SereneHeader(scaffoldKey: _scaffoldkey),
       body: Row(
         children: [
           Expanded( //this is ung create class part (ung left)

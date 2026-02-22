@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/widgets/serene_menu.dart';
+import 'package:flutter_application_1/widgets/serene_header.dart';
 
 class AboutPage extends StatelessWidget {
   AboutPage({super.key});
@@ -12,38 +13,7 @@ class AboutPage extends StatelessWidget {
       endDrawer: const SereneDrawer(),
 
       //header mo dito...
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: false,
-        title: const Text(
-          "Serene",
-          style: TextStyle(
-            color: Color(0xFF1D5A71),
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none, color: Color(0xFF1D5A71)),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.menu, color: Color(0xFF1D5A71)),
-            onPressed: () {
-              _scaffoldkey.currentState?.openEndDrawer();
-            },
-          ),
-          const SizedBox(width: 15),
-        ],
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(1.0),
-          child: Divider(height: 1, color: Color(0xFF1D5A71)),
-        ),
-      ),
-
+      appBar: SereneHeader(scaffoldKey: _scaffoldkey),
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -90,9 +60,8 @@ class AboutPage extends StatelessWidget {
   return Column(
     children: [
       Stack(
-        alignment: Alignment.center, // Keeps the title in the absolute middle
+        alignment: Alignment.center,
         children: [
-          // Use a Row here to ensure the title doesn't get covered
           const Center(
             child: Text(
               "About Serene",
@@ -103,9 +72,8 @@ class AboutPage extends StatelessWidget {
               ),
             ),
           ),
-          // Position the close button to the far right
           Positioned(
-            right: -10, // Adjust this to nudge the 'X' closer to the edge
+            right: -10,
             top: -10,
             child: IconButton(
               icon: const Icon(Icons.close, color: Color(0xFF1D5A71), size: 32),

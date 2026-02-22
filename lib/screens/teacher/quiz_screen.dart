@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/serene_header.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_application_1/widgets/serene_menu.dart';
 
@@ -273,41 +274,7 @@ Future<void> _saveGeneratedQuiz(List<Map<String, dynamic>> quizData) async {
       backgroundColor: Colors.white,
       key: _scaffoldkey,
       endDrawer: const SereneDrawer(),
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        leading: const BackButton(color: Color(0xFF1D5A71)),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: false,
-        title: const Text(
-          "Serene",
-          style: TextStyle(
-            color: Color(0xFF1D5A71),
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none, color: Color(0xFF1D4E5F)),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.menu, color: Color(0xFF1D4E5F)),
-            onPressed: () {
-              _scaffoldkey.currentState?.openEndDrawer();
-            },
-          ),
-          const SizedBox(width: 15),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1.0),
-          child: Container(
-            color: Color(0xFF1D5A71),
-            height: 1.0,
-          )),
-      ),
-
+      appBar: SereneHeader(scaffoldKey: _scaffoldkey, showBackButton: true),
       body: _isLoading 
       ? const Center(child: CircularProgressIndicator())
       : Column(
@@ -331,10 +298,10 @@ Future<void> _saveGeneratedQuiz(List<Map<String, dynamic>> quizData) async {
             ),
           ],
         ),
-  );
-}
+    );
+  }
 
-Widget _buildGenerateView() {
+  Widget _buildGenerateView() {
     if (_tempQuizData.isEmpty) {
 
       return Center(
@@ -402,7 +369,7 @@ Widget _buildGenerateView() {
             },
           ),
         ),
-Padding(
+        Padding(
           padding: const EdgeInsets.all(16.0),
           child: SizedBox(
             width: double.infinity,
@@ -418,181 +385,181 @@ Padding(
     );
   }
 
-Widget _buildManageView() {
-  return Column(
-    children: [
-      Container(
-        padding: const EdgeInsets.all(16),
-        color: const Color(0xFF1D5A71).withOpacity(0.1),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.settings, color: Color(0xFF1D5A71)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    "Current Policy: ${_selectedPolicy.toUpperCase()}\nMax Attempts: ${_maxAttempts == 99 ? 'Unlimited' : _maxAttempts}",
-                    style: const TextStyle(fontWeight: FontWeight.w600, color:  Color(0xFF1D5A71)),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.edit, color: Color(0xFF1D5A71)),
-                  onPressed: () => _showUpdateSettingsDialog(),
-                  tooltip: "Change Quiz Rules",
-                )
-              ],
-            ),
-          ],
-        ),
-      ),
-
-      Expanded(
-        child: _studentResults.isEmpty
-            ? const Center(child: Text("No students have taken this quiz yet."))
-            : ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                itemCount: _studentResults.length,
-                itemBuilder: (context, index) {
-                  final studentEntry = _studentResults[index];
-                  final List attempts = studentEntry['attempts'];
-                  final latestScore = attempts.first['calculated_percent'];
-
-                  return Card(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: Colors.grey.shade200),
+  Widget _buildManageView() {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          color: const Color(0xFF1D5A71).withOpacity(0.1),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.settings, color: Color(0xFF1D5A71)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "Current Policy: ${_selectedPolicy.toUpperCase()}\nMax Attempts: ${_maxAttempts == 99 ? 'Unlimited' : _maxAttempts}",
+                      style: const TextStyle(fontWeight: FontWeight.w600, color:  Color(0xFF1D5A71)),
                     ),
-                    child: ExpansionTile(
-                      shape: const Border(),
-                      leading: CircleAvatar(
-                        backgroundColor: const Color(0xFF1D5A71),
-                        child: Text(studentEntry['name'][0], style: const TextStyle(color: Colors.white)),
-                      ),
-                      title: Text(
-                        studentEntry['name'],
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1D5A71)),
-                      ),
-                      subtitle: Text("${attempts.length} attempts recorded"),
-                      trailing: Text(
-                            "${studentEntry['display_grade']}%", 
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1D5A71)),
-                          ),
-                      children: [
-                        const Divider(height: 1),
-                        Container(
-                          color: const Color(0xFF1D5A71).withOpacity(0.03),
-                          child: Column(
-                            children: attempts.map<Widget>((attempt) {
-                              return ListTile(
-                                dense: true,
-                                leading: const Icon(Icons.history, size: 18),
-                                title: Text("Completed: ${attempt['completed_at'].toString().substring(0, 16)}"),
-                                trailing: Text(
-                                  "${attempt['calculated_percent']}%",
-                                  style: const TextStyle(fontWeight: FontWeight.w600),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-      ),
-
-      const Divider(thickness: 1, color: Color(0xFF1D5A71)),
-      
-      Padding(
-        padding: const EdgeInsets.only(bottom: 20),
-        child: TextButton.icon(
-          onPressed: () async {
-            final confirm = await showDialog<bool>(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text("Delete Quiz?"),
-                content: const Text("This will permanently remove the quiz and all student scores."),
-                actions: [
-                  TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, true), 
-                    child: const Text("Delete", style: TextStyle(color: Colors.red))
                   ),
+                  IconButton(
+                    icon: const Icon(Icons.edit, color: Color(0xFF1D5A71)),
+                    onPressed: () => _showUpdateSettingsDialog(),
+                    tooltip: "Change Quiz Rules",
+                  )
                 ],
               ),
-            );
-
-            if (confirm == true) {
-              try {
-                await supabase.from('quiz').delete().eq('quizid', _existingQuizId!);
-                _loadInitialData(); 
-              } catch (e) {
-                _showSnackBar("Delete failed: $e", Colors.red);
-              }
-            }
-          },
-          icon: const Icon(Icons.delete_forever, color: Colors.red),
-          label: const Text("Delete Quiz & Reset Scores", style: TextStyle(color: Colors.red)),
-        ),
-      )
-    ],
-  );
-}
-
-void _showUpdateSettingsDialog() {
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text("Update Quiz Rules"),
-      content: StatefulBuilder(
-        builder: (context, setDialogState) {
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButton<int>(
-                isExpanded: true,
-                value: _maxAttempts,
-                onChanged: (val) => setDialogState(() => _maxAttempts = val!),
-                items: [1, 2, 3, 5, 10, 99].map((int value) {
-                  return DropdownMenuItem<int>(value: value, child: Text("$value Attempts"));
-                }).toList(),
-              ),
-              DropdownButton<String>(
-                isExpanded: true,
-                value: _selectedPolicy,
-                onChanged: (val) => setDialogState(() => _selectedPolicy = val!),
-                items: _policies.map((String value) {
-                  return DropdownMenuItem<String>(value: value, child: Text(value.toUpperCase()));
-                }).toList(),
-              ),
             ],
-          );
-        }
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
-        ElevatedButton(
-          onPressed: () async {
-            try {
-              await supabase.from('quiz').update({
-                'max_attempts': _maxAttempts,
-                'grading_policy': _selectedPolicy,
-              }).eq('quizid', _existingQuizId!);
-              Navigator.pop(context);
-              setState(() {});
-              _showSnackBar("Settings updated!", Colors.green);
-            } catch (e) {
-              _showSnackBar("Update failed", Colors.red);
-            }
-          },
-          child: const Text("Save Changes"),
+          ),
+        ),
+
+        Expanded(
+          child: _studentResults.isEmpty
+              ? const Center(child: Text("No students have taken this quiz yet."))
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  itemCount: _studentResults.length,
+                  itemBuilder: (context, index) {
+                    final studentEntry = _studentResults[index];
+                    final List attempts = studentEntry['attempts'];
+                    final latestScore = attempts.first['calculated_percent'];
+
+                    return Card(
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: Colors.grey.shade200),
+                      ),
+                      child: ExpansionTile(
+                        shape: const Border(),
+                        leading: CircleAvatar(
+                          backgroundColor: const Color(0xFF1D5A71),
+                          child: Text(studentEntry['name'][0], style: const TextStyle(color: Colors.white)),
+                        ),
+                        title: Text(
+                          studentEntry['name'],
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1D5A71)),
+                        ),
+                        subtitle: Text("${attempts.length} attempts recorded"),
+                        trailing: Text(
+                              "${studentEntry['display_grade']}%", 
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1D5A71)),
+                            ),
+                        children: [
+                          const Divider(height: 1),
+                          Container(
+                            color: const Color(0xFF1D5A71).withOpacity(0.03),
+                            child: Column(
+                              children: attempts.map<Widget>((attempt) {
+                                return ListTile(
+                                  dense: true,
+                                  leading: const Icon(Icons.history, size: 18),
+                                  title: Text("Completed: ${attempt['completed_at'].toString().substring(0, 16)}"),
+                                  trailing: Text(
+                                    "${attempt['calculated_percent']}%",
+                                    style: const TextStyle(fontWeight: FontWeight.w600),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+        ),
+
+        const Divider(thickness: 1, color: Color(0xFF1D5A71)),
+        
+        Padding(
+          padding: const EdgeInsets.only(bottom: 20),
+          child: TextButton.icon(
+            onPressed: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text("Delete Quiz?"),
+                  content: const Text("This will permanently remove the quiz and all student scores."),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true), 
+                      child: const Text("Delete", style: TextStyle(color: Colors.red))
+                    ),
+                  ],
+                ),
+              );
+
+              if (confirm == true) {
+                try {
+                  await supabase.from('quiz').delete().eq('quizid', _existingQuizId!);
+                  _loadInitialData(); 
+                } catch (e) {
+                  _showSnackBar("Delete failed: $e", Colors.red);
+                }
+              }
+            },
+            icon: const Icon(Icons.delete_forever, color: Colors.red),
+            label: const Text("Delete Quiz & Reset Scores", style: TextStyle(color: Colors.red)),
+          ),
         )
       ],
-    ),
-  );
-}
+    );
+  }
+
+  void _showUpdateSettingsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Update Quiz Rules"),
+        content: StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButton<int>(
+                  isExpanded: true,
+                  value: _maxAttempts,
+                  onChanged: (val) => setDialogState(() => _maxAttempts = val!),
+                  items: [1, 2, 3, 5, 10, 99].map((int value) {
+                    return DropdownMenuItem<int>(value: value, child: Text("$value Attempts"));
+                  }).toList(),
+                ),
+                DropdownButton<String>(
+                  isExpanded: true,
+                  value: _selectedPolicy,
+                  onChanged: (val) => setDialogState(() => _selectedPolicy = val!),
+                  items: _policies.map((String value) {
+                    return DropdownMenuItem<String>(value: value, child: Text(value.toUpperCase()));
+                  }).toList(),
+                ),
+              ],
+            );
+          }
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                await supabase.from('quiz').update({
+                  'max_attempts': _maxAttempts,
+                  'grading_policy': _selectedPolicy,
+                }).eq('quizid', _existingQuizId!);
+                Navigator.pop(context);
+                setState(() {});
+                _showSnackBar("Settings updated!", Colors.green);
+              } catch (e) {
+                _showSnackBar("Update failed", Colors.red);
+              }
+            },
+            child: const Text("Save Changes"),
+          )
+        ],
+      ),
+    );
+  }
 }

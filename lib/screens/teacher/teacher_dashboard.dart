@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/screens/teacher/lesson_screen.dart';
 import 'package:flutter_application_1/screens/teacher/student_performance.dart';
+import 'package:flutter_application_1/widgets/serene_header.dart';
 import 'package:flutter_application_1/widgets/serene_menu.dart';
 
 class TeacherDashboard extends StatefulWidget {
@@ -29,43 +30,10 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
       backgroundColor: Colors.white,
       key: _scaffoldkey,
       endDrawer: const SereneDrawer(),
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        leading: const BackButton(color: Color(0xFF1D5A71)),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: false,
-        title: const Text(
-          "Serene",
-          style: TextStyle(
-            color: Color(0xFF1D5A71),
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none, color: Color(0xFF1D4E5F)),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.menu, color: Color(0xFF1D4E5F)),
-            onPressed: () {
-              _scaffoldkey.currentState?.openEndDrawer();
-            },
-          ),
-          const SizedBox(width: 15),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1.0),
-          child: Container(
-            color: Color(0xFF1D5A71),
-            height: 1.0,
-          )),
-      ),
+      appBar: SereneHeader(scaffoldKey: _scaffoldkey, showBackButton: false),
       body: Row(
         children: [
-          // THE SIDEBAR
+          //SIDEBAR
           Container(
             width: 250,
             decoration: const BoxDecoration(
@@ -78,7 +46,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
               ],
             ),
           ),
-          // THE DYNAMIC CONTENT
+          //CONTENT
           Expanded(
             child: _selectedIndex == 0 
               ? LessonManagementScreen(

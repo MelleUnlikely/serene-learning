@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/serene_header.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../upload_service.dart';
 import 'package:flutter_application_1/widgets/serene_menu.dart';
@@ -70,41 +71,7 @@ double _uploadProgress = 0;
       backgroundColor: Colors.white,
       key: _scaffoldkey,
       endDrawer: const SereneDrawer(),
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        leading: const BackButton(color: Color(0xFF1D5A71)),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: false,
-        title: const Text(
-          "Serene",
-          style: TextStyle(
-            color: Color(0xFF1D5A71),
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none, color: Color(0xFF1D4E5F)),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.menu, color: Color(0xFF1D4E5F)),
-            onPressed: () {
-              _scaffoldkey.currentState?.openEndDrawer();
-            },
-          ),
-          const SizedBox(width: 15),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1.0),
-          child: Container(
-            color: Color(0xFF1D5A71),
-            height: 1.0,
-          )),
-      ),
-
+      appBar: SereneHeader(scaffoldKey: _scaffoldkey, showBackButton: true),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -120,7 +87,7 @@ double _uploadProgress = 0;
             ),
           ),
 
-          // Input Fields
+          //Input Fields
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Card(

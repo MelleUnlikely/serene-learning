@@ -286,7 +286,7 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
         backgroundColor: color,
         behavior: SnackBarBehavior.floating,
         
-        // We set a massive bottom margin to push it to the top of the screen
+        //mageseset ng bottom margin to push it to the top of the screen
         margin: EdgeInsets.only(
           bottom: screenHeight - 100, //para mapunta sa taas ung snackbar
           left: screenWidth * 0.8,
