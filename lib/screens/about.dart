@@ -87,12 +87,14 @@ class AboutPage extends StatelessWidget {
   }
 
   Widget _buildAboutContent(BuildContext context) {
-    return Column(
-      children: [
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            const Text(
+  return Column(
+    children: [
+      Stack(
+        alignment: Alignment.center, // Keeps the title in the absolute middle
+        children: [
+          // Use a Row here to ensure the title doesn't get covered
+          const Center(
+            child: Text(
               "About Serene",
               style: TextStyle(
                 fontSize: 32,
@@ -100,16 +102,19 @@ class AboutPage extends StatelessWidget {
                 color: Color(0xFF1D5A71),
               ),
             ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: IconButton(
-                icon: const Icon(Icons.close, color: Color(0xFF1D5A71), size: 32),
-                onPressed: () => Navigator.pop(context),
-              ),
+          ),
+          // Position the close button to the far right
+          Positioned(
+            right: -10, // Adjust this to nudge the 'X' closer to the edge
+            top: -10,
+            child: IconButton(
+              icon: const Icon(Icons.close, color: Color(0xFF1D5A71), size: 32),
+              onPressed: () => Navigator.pop(context),
             ),
-          ],
-        ),
-        const SizedBox(height: 10),
+          ),
+        ],
+      ),
+      const SizedBox(height: 10),
         const Text(
           "Serene is a mobile application dedicated to bridging the communication gap for deaf students. Our mission is to provide an interactive and engaging platform for learning Filipino Sign Language (FSL).",
           textAlign: TextAlign.center,

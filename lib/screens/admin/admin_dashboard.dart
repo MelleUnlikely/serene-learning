@@ -18,9 +18,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
   int studentCount = 0;
   int teacherCount = 0;
   bool isLoading = true;
+  String schoolName = "Loading...";
   List<BarChartGroupData> graphData = [];
   List<String> labels = [];
   final GlobalKey<ScaffoldState> _scaffoldkey = GlobalKey<ScaffoldState>();
+
 
   @override
   void initState() {
@@ -28,9 +30,23 @@ class _AdminDashboardState extends State<AdminDashboard> {
     _initializeDashboard();
   }
 
+  Future<void> _fetchSchoolName() async {
+    try {
+      final res = await Supabase.instance.client
+          .from('schools') // Assuming your table is named 'schools'
+          .select('schoolname')
+          .eq('schoolid', widget.schoolId)
+          .single();
+      if (mounted) setState(() => schoolName = res['schoolname'] ?? "Unknown School");
+    } catch (e) {
+      debugPrint("School Name Error: $e");
+    }
+  }
+
   Future<void> _initializeDashboard() async {
     try {
       await Future.wait([
+        _fetchSchoolName(),
         _fetchCounts(),
         _fetchGraphData(),
       ]);
@@ -251,14 +267,23 @@ class _AdminDashboardState extends State<AdminDashboard> {
         automaticallyImplyLeading: false,
         backgroundColor: Colors.white,
         elevation: 0,
-        centerTitle: false,
-        title: const Text(
-          "Serene",
-          style: TextStyle(
-            color: Color(0xFF1D5A71),
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-          ),
+        centerTitle: false,   
+        title: Row(
+          children: [
+            Image.asset(
+              'assets/images/logo.png',
+              height: 35,
+            ),
+            const SizedBox(width: 10),
+            const Text(
+              "Serene",
+              style: TextStyle(
+                color: Color(0xFF1D5A71),
+                fontWeight: FontWeight.bold,
+                fontSize: 24,
+              ),
+            ),
+          ],
         ),
         actions: [
           IconButton(
@@ -373,13 +398,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Widget _buildGraphSection() {
     return Container(
       padding: const EdgeInsets.all(24),
-      height: 450,
+      height: 500,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: const Color(0xFF1D5A71),
-          width: 1,
+          width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
@@ -391,15 +416,23 @@ class _AdminDashboardState extends State<AdminDashboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Academic Performance Index",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1D5A71)),
+          Text(
+            schoolName,
+            style: const TextStyle(
+              fontSize: 24, 
+              fontWeight: FontWeight.bold, 
+              color: Color(0xFF1D5A71)
+            ),
           ),
           const Text(
-            "Real-time Average Accuracy (%)",
-            style: TextStyle(color: Color(0xFF1D5A71)),
+            "Class Accuracy Table",
+            style: TextStyle(
+              fontSize: 14,
+              color: Color(0xFF1D5A71),
+              fontWeight: FontWeight.w500
+            ),
           ),
-          const SizedBox(height: 40),
+          const SizedBox(height: 30),
           Expanded(
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -409,18 +442,22 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         BarChartData(
                           maxY: 100,
                           minY: 0,
-                          alignment: BarChartAlignment.spaceAround,
-                          groupsSpace: 12,
                           gridData: FlGridData(
                             show: true,
                             drawVerticalLine: false,
-                            horizontalInterval: 20,
+                            horizontalInterval: 25,
                             getDrawingHorizontalLine: (value) => FlLine(
-                              color: Color(0xFFB3D8EE).withOpacity(0.5),
+                              color: const Color(0xFFB3D8EE).withOpacity(0.5),
                               strokeWidth: 1,
                             ),
                           ),
-                          borderData: FlBorderData(show: false),
+                          borderData: FlBorderData(
+                            show: true,
+                            border: Border(
+                              bottom: BorderSide(color: const Color(0xFFB3D8EE).withOpacity(0.5), width: 1), // 0% line
+                              top: BorderSide(color: const Color(0xFFB3D8EE).withOpacity(0.5), width: 1),    // 100% line
+                            ),
+                          ),
                           barGroups: graphData,
                           barTouchData: BarTouchData(
                             enabled: true,
@@ -430,19 +467,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               getTooltipItem: (group, groupIndex, rod, rodIndex) {
                                 return BarTooltipItem(
                                   "${labels[groupIndex]}\n",
-                                  const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
+                                  const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
                                   children: [
                                     TextSpan(
                                       text: "${rod.toY.toStringAsFixed(1)}%",
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 12,
-                                      ),
+                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500, fontSize: 10),
                                     ),
                                   ],
                                 );
@@ -452,47 +481,44 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           titlesData: FlTitlesData(
                             show: true,
                             bottomTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              reservedSize: 45,
-                              interval: 25,
-                              getTitlesWidget: (value, meta) {
-                              int index = value.toInt();
-                              
-                              if (index >= 0 && index < labels.length) {
-                                return SideTitleWidget(
-                                  meta: meta, 
-                                  space: 12,
-                                  angle: 0.5, 
-                                  child: Text(
-                                    labels[index],
-                                    style: const TextStyle(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFF1D5A71),
-                                    ),
-                                  ),
-                                );
-                              }
-                              return const SizedBox.shrink();
-                            },
-                            ),
-                          ),
-                            leftTitles: AxisTitles(
                               sideTitles: SideTitles(
                                 showTitles: true,
-                                reservedSize: 40,
+                                reservedSize: 45,
                                 getTitlesWidget: (value, meta) {
-                                  if (value % 25 == 0) { 
-                                    return Text(
-                                      "${value.toInt()}%",
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey,
+                                  int index = value.toInt();
+                                  if (index >= 0 && index < labels.length) {
+                                    return SideTitleWidget(
+                                      meta: meta,
+                                      space: 15,
+                                      angle: -0.8, 
+                                      child: Text(
+                                        labels[index],
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF1D5A71),
+                                        ),
                                       ),
                                     );
                                   }
                                   return const SizedBox.shrink();
+                                },
+                              ),
+                            ),
+                            // 2. Corrected Left Titles (Y-Axis)
+                            leftTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                reservedSize: 40,
+                                interval: 25,
+                                getTitlesWidget: (value, meta) {
+                                  return SideTitleWidget(
+                                    meta: meta,
+                                    child: Text(
+                                      "${value.toInt()}%",
+                                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                    ),
+                                  );
                                 },
                               ),
                             ),
