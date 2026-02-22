@@ -3,18 +3,23 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 
+
 class StudentPerformanceScreen extends StatefulWidget {
   final int classId;
-
   const StudentPerformanceScreen({super.key, required this.classId});
 
   @override
   State<StudentPerformanceScreen> createState() => _StudentPerformanceScreenState();
+
 }
+
+
 
 class _StudentPerformanceScreenState extends State<StudentPerformanceScreen> {
   final supabase = Supabase.instance.client;
   bool _isLoading = false;
+
+
 
   List<Map<String, dynamic>> _students = [];
   List<FlSpot> _weeklySpots = [
@@ -24,6 +29,7 @@ class _StudentPerformanceScreenState extends State<StudentPerformanceScreen> {
     const FlSpot(4, 0), // Thu
     const FlSpot(5, 0), // Fri
   ];
+
   int _activeCount = 0;
   int _totalStudents = 0;
 
@@ -33,15 +39,19 @@ class _StudentPerformanceScreenState extends State<StudentPerformanceScreen> {
     _loadAllData();
   }
 
-  // Helper to call both fetches
+
   Future<void> _loadAllData() async {
+
     await Future.wait([
       _fetchStudentData(),
       _fetchWeeklyTrend(),
     ]);
   }
 
+
+
   Future<void> _fetchWeeklyTrend() async {
+
     try {
       final data = await supabase
           .from('weekly_attendance_summary')
@@ -70,15 +80,14 @@ class _StudentPerformanceScreenState extends State<StudentPerformanceScreen> {
   setState(() => _isLoading = true);
 
   try {
-    // 1. Fetch Enrollment and Profiles
     final List<dynamic> enrollmentData = await supabase
         .from('enrollmentrecord')
         .select('''
-          studentid, 
+          studentid,
           profiles!inner (
-            userid, 
-            uid, 
-            fullname, 
+            userid,
+            uid,
+            fullname,
             last_login
           )
         ''')
@@ -88,26 +97,26 @@ class _StudentPerformanceScreenState extends State<StudentPerformanceScreen> {
       enrollmentData.map((e) => e['profiles'])
     );
 
-    // 2. Fetch Quiz definitions for this class
     final List<dynamic> quizzesData = await supabase
         .from('quiz')
         .select('quizid, grading_policy, quizquestion(count), lesson!inner(classid)')
         .eq('lesson.classid', widget.classId);
 
-    // 3. Fetch all Quiz Results
     final List<dynamic> resultsData = await supabase
         .from('quiz_results')
         .select('quizid, studentid, score');
 
     List<Map<String, dynamic>> processedStudents = [];
+
     int activeToday = 0;
+
     DateTime now = DateTime.now();
 
     for (var student in studentsData) {
-      final String studentUuid = student['uid'].toString(); 
-      
-      // --- ACTIVITY MONITOR LOGIC (For Donut Chart) ---
+
+      final String studentUuid = student['uid'].toString();
       final String? lastLoginStr = student['last_login'];
+
       if (lastLoginStr != null) {
         try {
           DateTime lastLogin = DateTime.parse(lastLoginStr);
@@ -117,13 +126,12 @@ class _StudentPerformanceScreenState extends State<StudentPerformanceScreen> {
         } catch (e) { /* skip */ }
       }
 
-      // --- REVERTED ORIGINAL ACCURACY LOGIC ---
       List<double> quizFinalPercentages = [];
 
       for (var quiz in quizzesData) {
         final String quizId = quiz['quizid'].toString();
         String policy = quiz['grading_policy'] ?? 'average';
-        
+
         int totalQuestions = 0;
         final qCount = quiz['quizquestion'];
         if (qCount is List && qCount.isNotEmpty) {
@@ -131,10 +139,10 @@ class _StudentPerformanceScreenState extends State<StudentPerformanceScreen> {
         } else if (qCount is Map) {
           totalQuestions = qCount['count'] ?? 0;
         }
-        if (totalQuestions <= 0) totalQuestions = 1; 
+        if (totalQuestions <= 0) totalQuestions = 1;
 
-        var studentAttempts = resultsData.where((r) => 
-          r['quizid'].toString() == quizId && 
+        var studentAttempts = resultsData.where((r) =>
+          r['quizid'].toString() == quizId &&
           r['studentid'].toString() == studentUuid
         ).toList();
 
@@ -145,20 +153,22 @@ class _StudentPerformanceScreenState extends State<StudentPerformanceScreen> {
           }).toList();
 
           double finalQuizScore = 0;
+
           if (policy == 'highest') {
             finalQuizScore = attemptPercents.reduce((a, b) => a > b ? a : b);
+
           } else if (policy == 'average') {
             finalQuizScore = attemptPercents.reduce((a, b) => a + b) / attemptPercents.length;
           } else {
             finalQuizScore = attemptPercents.first;
           }
-          
+
           quizFinalPercentages.add(finalQuizScore);
         }
       }
 
-      double overallAccuracy = quizFinalPercentages.isEmpty 
-          ? 0.0 
+      double overallAccuracy = quizFinalPercentages.isEmpty
+          ? 0.0
           : quizFinalPercentages.reduce((a, b) => a + b) / quizFinalPercentages.length;
 
       processedStudents.add({
@@ -167,12 +177,11 @@ class _StudentPerformanceScreenState extends State<StudentPerformanceScreen> {
         'last_sign_in_at': student['last_login'],
       });
     }
-
     if (mounted) {
       setState(() {
         _students = processedStudents;
         _totalStudents = _students.length;
-        _activeCount = activeToday; 
+        _activeCount = activeToday;
       });
     }
   } catch (e) {
@@ -181,6 +190,8 @@ class _StudentPerformanceScreenState extends State<StudentPerformanceScreen> {
     if (mounted) setState(() => _isLoading = false);
   }
 }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -205,6 +216,8 @@ class _StudentPerformanceScreenState extends State<StudentPerformanceScreen> {
       ),
     );
   }
+
+
 
   Widget _buildPerformanceTable() {
     return Container(
@@ -260,6 +273,7 @@ class _StudentPerformanceScreenState extends State<StudentPerformanceScreen> {
     );
   }
 
+
   Widget _buildRemarksBadge(double grade) {
     bool isPassed = grade >= 60.0;
     return Container(
@@ -272,6 +286,7 @@ class _StudentPerformanceScreenState extends State<StudentPerformanceScreen> {
           style: TextStyle(color: isPassed ? Colors.green : Colors.red, fontSize: 11, fontWeight: FontWeight.bold)),
     );
   }
+
 
   Widget _buildStudentActivityDonut() {
     String formattedDate = DateFormat('MMMM d, yyyy').format(DateTime.now());
@@ -319,58 +334,86 @@ class _StudentPerformanceScreenState extends State<StudentPerformanceScreen> {
     );
   }
 
+
   Widget _buildWeeklyTrendChart() {
-    return Container(
-      height: 250,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF1D5A71)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text("Weekly Activity Trend", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1D5A71))),
-          const SizedBox(height: 20),
-          Expanded(
-            child: LineChart(
-              LineChartData(
-                minX: 1, maxX: 5, minY: 0,
-                titlesData: FlTitlesData(
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (value, meta) {
-                        const style = TextStyle(fontSize: 10, color: Color(0xFF1D5A71));
-                        switch (value.toInt()) {
-                          case 1: return const Text('Mon', style: style);
-                          case 2: return const Text('Tue', style: style);
-                          case 3: return const Text('Wed', style: style);
-                          case 4: return const Text('Thu', style: style);
-                          case 5: return const Text('Fri', style: style);
-                        }
-                        return const Text('');
-                      },
-                    ),
-                  ),
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                ),
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: _weeklySpots,
-                    isCurved: true,
-                    color: const Color(0xFF1D5A71),
-                    barWidth: 4,
-                    belowBarData: BarAreaData(show: true, color: const Color(0xFF1D5A71).withOpacity(0.1)),
-                  ),
-                ],
+  double chartMaxY = _totalStudents > 0 ? _totalStudents.toDouble() : 5.0;
+  return Container(
+    height: 250,
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: const Color(0xFF1D5A71)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Weekly Activity Trend",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1D5A71))),
+        const SizedBox(height: 20),
+        Expanded(
+          child: LineChart(
+            LineChartData(
+              minX: 1,
+              maxX: 5,
+              minY: 0,
+              maxY: chartMaxY,
+              gridData: FlGridData(
+                show: true,
+                drawVerticalLine: false,
+                horizontalInterval: _totalStudents > 5 ? (_totalStudents / 5).floorToDouble() : 1,
               ),
+              titlesData: FlTitlesData(
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    interval: 1,
+                    getTitlesWidget: (value, meta) {
+                      const style = TextStyle(fontSize: 10, color: Color(0xFF1D5A71));
+                      switch (value.toInt()) {
+                        case 1: return const Text('Mon', style: style);
+                        case 2: return const Text('Tue', style: style);
+                        case 3: return const Text('Wed', style: style);
+                        case 4: return const Text('Thu', style: style);
+                        case 5: return const Text('Fri', style: style);
+                        default: return const Text('');
+                      }
+                    },
+                  ),
+                ),
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 30,
+                    interval: _totalStudents > 10 ? (_totalStudents / 5) : 1,
+                    getTitlesWidget: (value, meta) {
+                      return Text(value.toInt().toString(),
+                          style: const TextStyle(fontSize: 10, color: Color(0xFF1D5A71)));
+                    },
+                  ),
+                ),
+                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              ),
+              lineBarsData: [
+                LineChartBarData(
+                  spots: _weeklySpots,
+                  isCurved: true,
+                  preventCurveOverShooting: true,
+                  color: const Color(0xFF1D5A71),
+                  barWidth: 4,
+                  belowBarData: BarAreaData(
+                    show: true,
+                    color: const Color(0xFF1D5A71).withOpacity(0.1),
+                  ),
+                  dotData: const FlDotData(show: true),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 }

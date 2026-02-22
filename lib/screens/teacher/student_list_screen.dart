@@ -25,25 +25,78 @@ class _StudentListScreenState extends State<StudentListScreen> {
     _fetchStudents();
   }
 
-Future<void> _fetchStudents() async {
+  Future<void> _fetchStudents() async {
+    try {
+      final data = await supabase
+          .from('enrollmentrecord')
+          .select('*, profiles(fullname, email)')
+          .eq('classid', widget.classId);
+
+      setState(() {
+        _students = List<Map<String, dynamic>>.from(data);
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint("Error: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error fetching students: $e"), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _removeStudent(String userId, String studentName) async {
   try {
 
-    final data = await supabase
+    await supabase
         .from('enrollmentrecord')
-        .select('*, profiles(fullname, email)') 
-        .eq('classid', widget.classId);
+        .delete()
+        .eq('classid', widget.classId)
+        .eq('userid', userId);
 
-    setState(() {
-      _students = List<Map<String, dynamic>>.from(data);
-      _isLoading = false;
-    });
+    _fetchStudents();
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("$studentName has been unenrolled."),
+          backgroundColor: Colors.orange.shade700,
+        ),
+      );
+    }
   } catch (e) {
     debugPrint("Error: $e");
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error fetching students: $e"), backgroundColor: Colors.red),
+        SnackBar(content: Text("Failed to unenroll: $e"), backgroundColor: Colors.red),
       );
     }
   }
+}
+
+  void _confirmRemoval(String userId, String name) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text("Unenroll Student?"),
+      content: Text("Are you sure you want to remove $name from this class? They will no longer see the class materials, but their previous quiz records will be preserved in the system."),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Cancel"),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+            _removeStudent(userId, name);
+          },
+          child: const Text("Unenroll", style: TextStyle(color: Colors.orange)),
+        ),
+      ],
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -56,14 +109,9 @@ Future<void> _fetchStudents() async {
         leading: const BackButton(color: Color(0xFF1D5A71)),
         backgroundColor: Colors.white,
         elevation: 0,
-        centerTitle: false,
         title: const Text(
           "Serene",
-          style: TextStyle(
-            color: Color(0xFF1D5A71),
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-          ),
+          style: TextStyle(color: Color(0xFF1D5A71), fontWeight: FontWeight.bold, fontSize: 24),
         ),
         actions: [
           IconButton(
@@ -72,70 +120,59 @@ Future<void> _fetchStudents() async {
           ),
           IconButton(
             icon: const Icon(Icons.menu, color: Color(0xFF1D4E5F)),
-            onPressed: () {
-              _scaffoldkey.currentState?.openEndDrawer();
-            },
+            onPressed: () => _scaffoldkey.currentState?.openEndDrawer(),
           ),
           const SizedBox(width: 15),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
-          child: Container(
-            color: Color(0xFF1D5A71),
-            height: 1.0,
-          )),
+          child: Container(color: const Color(0xFF1D5A71), height: 1.0),
+        ),
       ),
-      
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
-                child: Text(
-                  "Students: ${widget.className}",
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1D5A71),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
+                  child: Text(
+                    "Students: ${widget.className}",
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1D5A71)),
                   ),
                 ),
-              ),
+                Expanded(
+                  child: _students.isEmpty
+                      ? const Center(
+                          child: Text("No students enrolled yet.", style: TextStyle(color: Colors.grey)),
+                        )
+                      : ListView.builder(
+                          itemCount: _students.length,
+                          itemBuilder: (context, index) {
+                            final enrollment = _students[index];
+                            final student = enrollment['profiles'];
+                            
+                            final String userId = enrollment['userid'].toString();
+                            final String name = student['fullname'] ?? "Unknown Student";
+                            final firstLetter = name.isNotEmpty ? name[0] : "?";
 
-              Expanded(
-                child: _students.isEmpty
-              ? const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.person, 
-                      size: 64, 
-                      color: Colors.grey
-                    ),
-                    SizedBox(height: 16),
-                    Text("No students enrolled yet.", style: TextStyle(color: Colors.grey),)
-                  ],
-                )
-              )
-              : ListView.builder(
-                  itemCount: _students.length,
-                  itemBuilder: (context, index) {
-                    final student = _students[index]['profiles'];
-                    final name = student['fullname'] ?? "Unknown Student";
-                    final firstLetter = name.isNotEmpty ? name[0] : "?";
-
-                    return ListTile(
-                      leading: CircleAvatar(child: Text(firstLetter)),
-                      title: Text(name),
-                      subtitle: Text(student['email'] ?? ""),
-                    );
-                  },
+                            return ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: const Color(0xFF1D5A71),
+                                child: Text(firstLetter, style: const TextStyle(color: Colors.white)),
+                              ),
+                              title: Text(name),
+                              subtitle: Text(student['email'] ?? ""),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.person_remove, color: Colors.redAccent),
+                                onPressed: () => _confirmRemoval(userId, name),
+                              ),
+                            );
+                          },
+                        ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
     );
   }
 }

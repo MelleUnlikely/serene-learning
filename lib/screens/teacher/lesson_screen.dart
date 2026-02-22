@@ -132,6 +132,21 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
     }
   }
 
+  Future<void> _deleteLesson(int id) async {
+  try {
+    // We target the specific lessonid
+    await Supabase.instance.client
+        .from('lesson')
+        .delete()
+        .eq('lessonid', id); 
+
+    _fetchLessons(); 
+    _showSnackBar("Lesson deleted successfully", Colors.green);
+  } catch (e) {
+    _showSnackBar("Failed to delete lesson: $e", Colors.red);
+  }
+}
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -198,11 +213,30 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
                                 },
                               ),
                               IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.red),
-                                onPressed: () {
-                                  //What will happen nga ba?
-                                },
-                              ),
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text("Delete Lesson?"),
+                                    content: Text("Are you sure you want to delete '${lesson['lessontitle']}'? This action cannot be undone."),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context), // Close dialog
+                                        child: const Text("Cancel"),
+                                      ),
+                                      TextButton(
+                                        onPressed: () {
+                                          _deleteLesson(lesson['lessonid']); // Perform delete
+                                          Navigator.pop(context); // Close dialog
+                                        },
+                                        child: const Text("Delete", style: TextStyle(color: Colors.red)),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
                             ],
                           ),
                           onTap: () {
