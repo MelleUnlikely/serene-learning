@@ -118,7 +118,7 @@ class SereneDrawer extends StatelessWidget {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const AboutPage()));
+                MaterialPageRoute(builder: (context) => AboutPage()));
             }),
           _buildMenuItem(Icons.logout, "Logout", () => _handleLogout(context)),
         ],

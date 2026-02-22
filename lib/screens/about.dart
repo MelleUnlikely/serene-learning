@@ -1,17 +1,49 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/serene_menu.dart';
 
 class AboutPage extends StatelessWidget {
-  const AboutPage({super.key});
+  AboutPage({super.key});
+  final GlobalKey<ScaffoldState> _scaffoldkey = GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
+      key: _scaffoldkey,
+      endDrawer: const SereneDrawer(),
+
+      //header mo dito...
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.white,
         elevation: 0,
-        leading: const BackButton(color: Color(0xFF1D5A71)),
+        centerTitle: false,
+        title: const Text(
+          "Serene",
+          style: TextStyle(
+            color: Color(0xFF1D5A71),
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_none, color: Color(0xFF1D5A71)),
+            onPressed: () {},
+          ),
+          IconButton(
+            icon: const Icon(Icons.menu, color: Color(0xFF1D5A71)),
+            onPressed: () {
+              _scaffoldkey.currentState?.openEndDrawer();
+            },
+          ),
+          const SizedBox(width: 15),
+        ],
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1.0),
+          child: Divider(height: 1, color: Color(0xFF1D5A71)),
+        ),
       ),
+
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -21,24 +53,32 @@ class AboutPage extends StatelessWidget {
             fit: BoxFit.cover,
           ),
         ),
-        child: Center(
-          child: SingleChildScrollView(
+        child: SingleChildScrollView(
+          child: Center(
             child: Container(
               constraints: const BoxConstraints(maxWidth: 800),
-              margin: const EdgeInsets.all(40),
-              padding: const EdgeInsets.all(40),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  )
+              margin: const EdgeInsets.symmetric(vertical: 40),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(25),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        )
+                      ],
+                    ),
+                    child: _buildAboutContent(context),
+                  ),
                 ],
               ),
-              child: _buildAboutContent(),
             ),
           ),
         ),
@@ -46,16 +86,28 @@ class AboutPage extends StatelessWidget {
     );
   }
 
-  Widget _buildAboutContent() {
+  Widget _buildAboutContent(BuildContext context) {
     return Column(
       children: [
-        const Text(
-          "About Serene",
-          style: TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF1D5A71),
-          ),
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            const Text(
+              "About Serene",
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1D5A71),
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Color(0xFF1D5A71), size: 32),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 10),
         const Text(
