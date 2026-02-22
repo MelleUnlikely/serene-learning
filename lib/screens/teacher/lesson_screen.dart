@@ -185,15 +185,25 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
                             style: TextStyle(color: Color(0xFF1D5A71), fontWeight: FontWeight.bold),),
                           subtitle: const Text("Manage materials",
                             style: TextStyle(color: Color(0xFF1D5A71))),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.quiz, color: Colors.white),
-                            onPressed: (){
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) =>
-                                QuizScreen(lessonId: lesson['lessonid']))
-                              );
-                            },
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min, // Vital to prevent Row from taking full width
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.quiz, color: Colors.white),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => QuizScreen(lessonId: lesson['lessonid'])),
+                                  );
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.red),
+                                onPressed: () {
+                                  //What will happen nga ba?
+                                },
+                              ),
+                            ],
                           ),
                           onTap: () {
                             Navigator.push(
@@ -203,8 +213,8 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
                                   lessontitle: lesson['lessontitle']
                                 ),
                               ),
-                              );
-                            },
+                            );
+                          },
                         ),
                       );
                     },
