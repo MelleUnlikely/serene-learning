@@ -172,6 +172,8 @@ class _SereneDrawerState extends State<SereneDrawer> {
                 MaterialPageRoute(builder: (context) => AboutPage()));
             }
           ),
+
+          _buildMenuItem(Icons.logout, "Logout", () => _handleLogout(context)),
         ],
       ),
     );

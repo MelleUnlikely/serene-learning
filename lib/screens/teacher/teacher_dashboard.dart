@@ -30,7 +30,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
       backgroundColor: Colors.white,
       key: _scaffoldkey,
       endDrawer: const SereneDrawer(),
-      appBar: SereneHeader(scaffoldKey: _scaffoldkey, showBackButton: false),
+      appBar: SereneHeader(scaffoldKey: _scaffoldkey, showBackButton: true),
       body: Row(
         children: [
           //SIDEBAR

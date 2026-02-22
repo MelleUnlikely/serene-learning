@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/serene_header.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_application_1/widgets/serene_menu.dart';
 
@@ -79,19 +80,51 @@ class _StudentListScreenState extends State<StudentListScreen> {
   showDialog(
     context: context,
     builder: (context) => AlertDialog(
-      title: const Text("Unenroll Student?"),
-      content: Text("Are you sure you want to remove $name from this class? They will no longer see the class materials, but their previous quiz records will be preserved in the system."),
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      titlePadding: EdgeInsets.zero, 
+      title: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: const BoxDecoration(
+          color: Color(0xFFD0EDF9),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(15),
+            topRight: Radius.circular(15),
+          ),
+        ),
+        child: Text(
+          "Unenroll Student?",
+          style: const TextStyle(
+            color: Color(0xFF1D5A71),
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      content: Padding(
+        padding: EdgeInsets.only(top: 20.0),
+        child: Text(
+          "Are you sure you want to remove $name from this class? They will no longer see the class materials, but their previous quiz records will be preserved in the system.",
+          style: TextStyle(color: Color(0xFF1D5A71), fontSize: 16)
+        ),
+      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text("Cancel"),
+          child: const Text("Cancel", style: TextStyle(color: Color(0xFF1D5A71))),
         ),
-        TextButton(
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.redAccent,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
           onPressed: () {
             Navigator.pop(context);
             _removeStudent(userId, name);
           },
-          child: const Text("Unenroll", style: TextStyle(color: Colors.orange)),
+          child: const Text("Unenroll", style: TextStyle(fontWeight: FontWeight.bold)),
         ),
       ],
     ),
@@ -104,31 +137,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
       backgroundColor: Colors.white,
       key: _scaffoldkey,
       endDrawer: const SereneDrawer(),
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        leading: const BackButton(color: Color(0xFF1D5A71)),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: const Text(
-          "Serene",
-          style: TextStyle(color: Color(0xFF1D5A71), fontWeight: FontWeight.bold, fontSize: 24),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none, color: Color(0xFF1D4E5F)),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.menu, color: Color(0xFF1D4E5F)),
-            onPressed: () => _scaffoldkey.currentState?.openEndDrawer(),
-          ),
-          const SizedBox(width: 15),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1.0),
-          child: Container(color: const Color(0xFF1D5A71), height: 1.0),
-        ),
-      ),
+      appBar: SereneHeader(scaffoldKey: _scaffoldkey, showBackButton: true),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(

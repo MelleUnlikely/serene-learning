@@ -218,19 +218,53 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
                                 showDialog(
                                   context: context,
                                   builder: (context) => AlertDialog(
-                                    title: const Text("Delete Lesson?"),
-                                    content: Text("Are you sure you want to delete '${lesson['lessontitle']}'? This action cannot be undone."),
+                                    backgroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                                    titlePadding: EdgeInsets.zero,
+                                    title: Container(
+                                      padding: const EdgeInsets.all(20),
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFFD0EDF9),
+                                        borderRadius: BorderRadius.only(
+                                          topLeft: Radius.circular(15),
+                                          topRight: Radius.circular(15),
+                                        ),
+                                      ),
+                                      child: const Row(
+                                        children: [
+                                          Icon(Icons.logout, color: Color(0xFF1D5A71)),
+                                          SizedBox(width: 12),
+                                          Text(
+                                            "Delete Lesson?",
+                                            style: TextStyle(color: Color(0xFF1D5A71), fontSize: 18, fontWeight: FontWeight.bold),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    content: Padding(
+                                        padding: EdgeInsets.only(top: 20.0),
+                                        child: Text(
+                                          "Are you sure you want to delete '${lesson['lessontitle']}'? This action cannot be undone.",
+                                          style: TextStyle(color: Color(0xFF1D5A71), fontSize: 16)
+                                        ),
+                                    ),
                                     actions: [
                                       TextButton(
-                                        onPressed: () => Navigator.pop(context), // Close dialog
-                                        child: const Text("Cancel"),
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text("Cancel", style: TextStyle(color: Color(0xFF1D5A71))),
                                       ),
-                                      TextButton(
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.redAccent,
+                                          foregroundColor: Colors.white,
+                                          elevation: 0,
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                        ),
                                         onPressed: () {
-                                          _deleteLesson(lesson['lessonid']); // Perform delete
-                                          Navigator.pop(context); // Close dialog
+                                          _deleteLesson(lesson['lessonid']);
+                                          Navigator.pop(context);
                                         },
-                                        child: const Text("Delete", style: TextStyle(color: Colors.red)),
+                                        child: const Text("Delete", style: TextStyle(fontWeight: FontWeight.bold)),
                                       ),
                                     ],
                                   ),
