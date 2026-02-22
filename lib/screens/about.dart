@@ -11,7 +11,6 @@ class AboutPage extends StatelessWidget {
     return Scaffold(
       key: _scaffoldkey,
       endDrawer: const SereneDrawer(),
-
       //header mo dito...
       appBar: SereneHeader(scaffoldKey: _scaffoldkey),
       body: Container(

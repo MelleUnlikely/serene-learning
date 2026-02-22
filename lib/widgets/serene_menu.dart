@@ -1,10 +1,49 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/screens/account.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../screens/about.dart';
 
-
-class SereneDrawer extends StatelessWidget {
+class SereneDrawer extends StatefulWidget {
   const SereneDrawer({super.key});
+
+  @override
+  State<SereneDrawer> createState() => _SereneDrawerState();
+}
+
+class _SereneDrawerState extends State<SereneDrawer> {
+  String userName = "Loading...";
+  String schoolName = "Loading...";
+  String employeeId = "Loading...";
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserProfile();
+  }
+
+  Future<void> _fetchUserProfile() async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return;
+
+      // Fetching profile and school name from your joined tables
+      final data = await Supabase.instance.client
+          .from('profiles')
+          .select('fullname, employeeid, schools(schoolname)')
+          .eq('id', user.id)
+          .single();
+
+      if (mounted) {
+        setState(() {
+          userName = data['fullname'] ?? "User";
+          employeeId = data['employeeid'] ?? "N/A";
+          schoolName = data['schools']['schoolname'] ?? "Unknown School";
+        });
+      }
+    } catch (e) {
+      debugPrint("Error fetching profile for menu: $e");
+    }
+  }
 
   Future<void> _handleLogout(BuildContext context) async {
     final supabase = Supabase.instance.client;
@@ -111,7 +150,19 @@ class SereneDrawer extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          _buildMenuItem(Icons.person_outline, "Account", () {}),
+          _buildMenuItem(Icons.person_outline, "Account", () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => AccountPage(
+                  userName: userName,
+                  schoolName: schoolName,
+                  employeeId: employeeId,
+                ),
+              ),
+            );
+          }),
           const Divider(indent: 20, endIndent: 20, thickness: 1, color: Color(0xFF1D5A71)),
           _buildMenuItem(Icons.help_outline, "About",
             () {
@@ -119,8 +170,8 @@ class SereneDrawer extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => AboutPage()));
-            }),
-          _buildMenuItem(Icons.logout, "Logout", () => _handleLogout(context)),
+            }
+          ),
         ],
       ),
     );
