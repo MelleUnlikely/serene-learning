@@ -1,20 +1,78 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_application_1/widgets/serene_header.dart';
 import 'package:flutter_application_1/widgets/serene_menu.dart';
 
-class AccountPage extends StatelessWidget {
-  final String userName;
-  final String schoolName;
-  final String employeeId;
+class AccountPage extends StatefulWidget {
+  final String uid;
 
-  AccountPage({
-    super.key,
-    required this.userName,
-    required this.schoolName,
-    required this.employeeId,
-  });
+  const AccountPage({super.key, required this.uid});
 
+  @override
+  State<AccountPage> createState() => _AccountPageState();
+}
+
+class _AccountPageState extends State<AccountPage> {
+  final supabase = Supabase.instance.client;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  bool _isLoading = true;
+  String _userName = "";
+  String _schoolName = "";
+  String? _employeeId;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAccountInfo();
+  }
+
+Future<void> _fetchAccountInfo() async {
+  try {
+    final data = await supabase
+        .from('profiles')
+        .select('''
+          fullname, 
+          schools(schoolname), 
+          teacher(employeeid)
+        ''')
+        .eq('uid', widget.uid)
+        .maybeSingle();
+
+    if (data != null && mounted) {
+      setState(() {
+        _userName = data['fullname'] ?? "N/A";
+
+        final schoolData = data['schools'];
+        if (schoolData is List && schoolData.isNotEmpty) {
+           _schoolName = schoolData[0]['schoolname'] ?? "N/A";
+        } else if (schoolData is Map) {
+           _schoolName = schoolData['schoolname'] ?? "N/A";
+        } else {
+           _schoolName = "No School Linked";
+        }
+
+        final teacherData = data['teacher'];
+        if (teacherData != null) {
+          if (teacherData is List && teacherData.isNotEmpty) {
+            _employeeId = teacherData[0]['employeeid']?.toString();
+          } else if (teacherData is Map) {
+            _employeeId = teacherData['employeeid']?.toString();
+          }
+        } else {
+          _employeeId = null; 
+        }
+
+        _isLoading = false;
+      });
+    } else {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  } catch (e) {
+    debugPrint("Fetch Error: $e");
+    if (mounted) setState(() => _isLoading = false);
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -31,27 +89,29 @@ class AccountPage extends StatelessWidget {
             fit: BoxFit.cover,
           ),
         ),
-        child: SingleChildScrollView(
-          child: Center(
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 600),
-              margin: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-              padding: const EdgeInsets.all(30),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  )
-                ],
+        child: _isLoading 
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF1D5A71)))
+          : SingleChildScrollView(
+              child: Center(
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 600),
+                  margin: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+                  padding: const EdgeInsets.all(30),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      )
+                    ],
+                  ),
+                  child: _buildAccountContent(context),
+                ),
               ),
-              child: _buildAccountContent(context),
             ),
-          ),
-        ),
       ),
     );
   }
@@ -60,10 +120,9 @@ class AccountPage extends StatelessWidget {
     return Column(
       children: [
         Stack(
-        alignment: Alignment.center,
-        children: [
-          const Center(
-            child: Text(
+          alignment: Alignment.center,
+          children: [
+            const Text(
               "Account Profile",
               style: TextStyle(
                 fontSize: 32,
@@ -71,25 +130,24 @@ class AccountPage extends StatelessWidget {
                 color: Color(0xFF1D5A71),
               ),
             ),
-          ),
-          Positioned(
-            right: -10,
-            top: -10,
-            child: IconButton(
-              icon: const Icon(Icons.close, color: Color(0xFF1D5A71), size: 32),
-              onPressed: () => Navigator.pop(context),
+            Align(
+              alignment: Alignment.centerRight,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Color(0xFF1D5A71), size: 32),
+                onPressed: () => Navigator.pop(context),
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
         const SizedBox(height: 10),
         const Divider(color: Color(0xFF1D5A71)),
         const SizedBox(height: 30),
         
-        // Account Details Section
-        _buildInfoTile(Icons.person, "Full Name", userName),
-        _buildInfoTile(Icons.school, "School", schoolName),
-        _buildInfoTile(Icons.badge, "Employee ID", employeeId),
+        _buildInfoTile(Icons.person, "Full Name", _userName),
+        _buildInfoTile(Icons.school, "School", _schoolName),
+        
+        if (_employeeId != null && _employeeId!.isNotEmpty)
+          _buildInfoTile(Icons.badge, "Employee ID", _employeeId!),
         
         const SizedBox(height: 40),
       ],
@@ -113,10 +171,7 @@ class AccountPage extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                label,
-                style: const TextStyle(fontSize: 14, color: Color(0xFF1D5A71)),
-              ),
+              Text(label, style: const TextStyle(fontSize: 14, color: Color(0xFF1D5A71))),
               Text(
                 value,
                 style: const TextStyle(

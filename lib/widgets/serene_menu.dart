@@ -11,6 +11,9 @@ class SereneDrawer extends StatefulWidget {
 }
 
 class _SereneDrawerState extends State<SereneDrawer> {
+  // Access the current user from Supabase
+  final User? user = Supabase.instance.client.auth.currentUser;
+
   String userName = "Loading...";
   String schoolName = "Loading...";
   String employeeId = "Loading...";
@@ -23,21 +26,19 @@ class _SereneDrawerState extends State<SereneDrawer> {
 
   Future<void> _fetchUserProfile() async {
     try {
-      final user = Supabase.instance.client.auth.currentUser;
       if (user == null) return;
 
-      // Fetching profile and school name from your joined tables
       final data = await Supabase.instance.client
           .from('profiles')
           .select('fullname, employeeid, schools(schoolname)')
-          .eq('id', user.id)
+          .eq('uid', user!.id)
           .single();
 
       if (mounted) {
         setState(() {
           userName = data['fullname'] ?? "User";
           employeeId = data['employeeid'] ?? "N/A";
-          schoolName = data['schools']['schoolname'] ?? "Unknown School";
+          schoolName = data['schools']?['schoolname'] ?? "Unknown School";
         });
       }
     } catch (e) {
@@ -103,7 +104,6 @@ class _SereneDrawerState extends State<SereneDrawer> {
     if (confirm == true) {
       try {
         await supabase.auth.signOut();
-
         if (context.mounted) {
           Navigator.pushNamedAndRemoveUntil(
             context,
@@ -150,28 +150,27 @@ class _SereneDrawerState extends State<SereneDrawer> {
             ),
           ),
           const SizedBox(height: 20),
-          _buildMenuItem(Icons.person_outline, "Account", () {
-            Navigator.pop(context);
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => AccountPage(
-                  userName: userName,
-                  schoolName: schoolName,
-                  employeeId: employeeId,
-                ),
-              ),
-            );
-          }),
-          const Divider(indent: 20, endIndent: 20, thickness: 1, color: Color(0xFF1D5A71)),
-          _buildMenuItem(Icons.help_outline, "About",
-            () {
-              Navigator.pop(context);
+          
+          // Account Menu Item
+            _buildMenuItem(Icons.person_outline, "Account", () {
+              if (user != null) {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => AccountPage(uid: user!.id)),
+                );
+              }
+            }),
+
+            const Divider(indent: 20, endIndent: 20, thickness: 1, color: Color(0xFF1D5A71)),
+
+            _buildMenuItem(Icons.help_outline, "About", () {
+              Navigator.pop(context); 
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => AboutPage()));
-            }
-          ),
+                MaterialPageRoute(builder: (context) => AboutPage()), 
+              );
+            }),
 
           _buildMenuItem(Icons.logout, "Logout", () => _handleLogout(context)),
         ],
