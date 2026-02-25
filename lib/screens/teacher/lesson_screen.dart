@@ -193,7 +193,7 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
                     itemBuilder: (context, index) {
                       final lesson = _lessons[index];
                       return Card(
-                        color: Color(0xFFa5ceeb), 
+                        color: Color(0xFFA5CEEB), 
                         child: ListTile(
                           leading: const Icon(Icons.book, color: Color(0XFF1d5a71)), //icon for the lesson
                           title: Text(lesson['lessontitle'],
@@ -201,7 +201,7 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
                           subtitle: const Text("Manage materials",
                             style: TextStyle(color: Color(0xFF1D5A71))),
                           trailing: Row(
-                            mainAxisSize: MainAxisSize.min, // Vital to prevent Row from taking full width
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
                                 icon: const Icon(Icons.quiz, color: Colors.white),

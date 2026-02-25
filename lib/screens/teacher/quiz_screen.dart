@@ -62,13 +62,13 @@ Future<void> _loadInitialData() async {
           .eq('quizid', _existingQuizId!)
           .order('completed_at', ascending: false);
 
-      // --- GROUPING & ADAPTIVE CALCULATION LOGIC ---
+      //GROUPING & ADAPTIVE CALCULATION LOGIC
       Map<String, List<Map<String, dynamic>>> grouped = {};
       
       for (var res in resultData) {
         final name = res['profiles']['fullname'] ?? "Unknown Student";
         
-        // Calculate the percentage for this specific attempt
+        //Will Calculate the percentage for this specific attempt
         double percentage = (res['score'] / totalQuestions) * 100;
         res['calculated_percent'] = percentage.clamp(0, 100).toInt();
 
@@ -81,7 +81,7 @@ Future<void> _loadInitialData() async {
           final attempts = e.value;
           double finalGrade = 0;
 
-          // Apply Teacher's Grading Policy
+          //Apply Teacher's Grading Policy
           if (_selectedPolicy == 'highest') {
             finalGrade = attempts
                 .map((a) => (a['calculated_percent'] as int).toDouble())
@@ -442,7 +442,7 @@ Future<void> _saveGeneratedQuiz(List<Map<String, dynamic>> quizData) async {
                           studentEntry['name'],
                           style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1D5A71)),
                         ),
-                        subtitle: Text("${attempts.length} attempts recorded"),
+                        subtitle: Text("${attempts.length} attempts recorded"), 
                         trailing: Text(
                               "${studentEntry['display_grade']}%", 
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1D5A71)),
@@ -481,13 +481,50 @@ Future<void> _saveGeneratedQuiz(List<Map<String, dynamic>> quizData) async {
               final confirm = await showDialog<bool>(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: const Text("Delete Quiz?"),
-                  content: const Text("This will permanently remove the quiz and all student scores."),
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                  titlePadding: EdgeInsets.zero,
+                  title: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFD0EDF9),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(15),
+                        topRight: Radius.circular(15),
+                      ),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.delete_forever, color: Color(0xFF1D5A71)),
+                        SizedBox(width: 12),
+                        Text(
+                          "Delete Quiz?",
+                          style: TextStyle(color: Color(0xFF1D5A71), fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                  content: const Padding(
+                    padding: EdgeInsets.only(top: 20.0),
+                    child: Text(
+                      "This will permanently remove the quiz and all student scores.",
+                      style: TextStyle(color: Color(0xFF1D5A71), fontSize: 16)
+                    ),
+                  ),
                   actions: [
-                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
                     TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text("Cancel", style: TextStyle(color: Color(0xFF1D5A71))),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
                       onPressed: () => Navigator.pop(context, true), 
-                      child: const Text("Delete", style: TextStyle(color: Colors.red))
+                      child: const Text("Delete", style: TextStyle(fontWeight: FontWeight.bold))
                     ),
                   ],
                 ),
@@ -514,13 +551,36 @@ Future<void> _saveGeneratedQuiz(List<Map<String, dynamic>> quizData) async {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Update Quiz Rules"),
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        titlePadding: EdgeInsets.zero,
+        title: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: const BoxDecoration(
+            color: Color(0xFFD0EDF9),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(15),
+              topRight: Radius.circular(15),
+            ),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.quiz, color: Color(0xFF1D5A71)),
+              SizedBox(width: 12),
+              Text(
+                "Update Quiz Rules",
+                style: TextStyle(color: Color(0xFF1D5A71), fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ),
         content: StatefulBuilder(
           builder: (context, setDialogState) {
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButton<int>(
+                  dropdownColor: Colors.white,
                   isExpanded: true,
                   value: _maxAttempts,
                   onChanged: (val) => setDialogState(() => _maxAttempts = val!),
@@ -529,6 +589,7 @@ Future<void> _saveGeneratedQuiz(List<Map<String, dynamic>> quizData) async {
                   }).toList(),
                 ),
                 DropdownButton<String>(
+                  dropdownColor: Colors.white,
                   isExpanded: true,
                   value: _selectedPolicy,
                   onChanged: (val) => setDialogState(() => _selectedPolicy = val!),
@@ -541,8 +602,17 @@ Future<void> _saveGeneratedQuiz(List<Map<String, dynamic>> quizData) async {
           }
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel", style: TextStyle(color: Color(0xFF1D5A71))),
+          ),
           ElevatedButton(
+             style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
             onPressed: () async {
               try {
                 await supabase.from('quiz').update({
@@ -556,7 +626,7 @@ Future<void> _saveGeneratedQuiz(List<Map<String, dynamic>> quizData) async {
                 _showSnackBar("Update failed", Colors.red);
               }
             },
-            child: const Text("Save Changes"),
+            child: const Text("Save Changes", style: TextStyle(fontWeight: FontWeight.bold)),
           )
         ],
       ),
