@@ -112,18 +112,34 @@ class _AdminDashboardState extends State<AdminDashboard> {
     builder: (context) => StatefulBuilder(
       builder: (context, setDialogState) {
         return AlertDialog(
+          backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          titlePadding: EdgeInsets.zero,
+          title: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: const BoxDecoration(
+              color: Color(0xFFD0EDF9),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(15),
+                topRight: Radius.circular(15),
+              ),
+            ),
+            child: const Row(
+              children: [
+                SizedBox(width: 12),
+                Text(
+                  "School Progress Report",
+                  style: TextStyle(color: Color(0xFF1D5A71), fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
           content: Container(
             width: 500,
             padding: const EdgeInsets.all(16),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  "School Progress Report",
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1D5A71)),
-                ),
-                const SizedBox(height: 20),
                 CheckboxListTile(
                   title: const Text("Include Lessons"),
                   value: includeLessons,
@@ -137,6 +153,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFa5ceeb),
+                    foregroundColor: const Color(0xFF006064),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    minimumSize: const Size(200, 45),
+                  ),
                   onPressed: isGenerating ? null : () async {
                   setDialogState(() => isGenerating = true);
                   try {
@@ -153,7 +178,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   icon: isGenerating 
                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                       : const Icon(Icons.description),
-                  label: Text(isGenerating ? "Processing..." : "Generate Detailed Report"),
+                  label: Text(isGenerating ? "Processing..." : "Generate Detailed Report", style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ],
             ),

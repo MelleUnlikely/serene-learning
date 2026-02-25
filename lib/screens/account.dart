@@ -80,19 +80,46 @@ Future<void> _editName() async {
   return showDialog(
     context: context,
     builder: (context) => AlertDialog(
-      title: const Text("Edit Name", style: TextStyle(color: Color(0xFF1D5A71))),
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      titlePadding: EdgeInsets.zero, 
+      title: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: const BoxDecoration(
+          color: Color(0xFFD0EDF9),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(15),
+            topRight: Radius.circular(15),
+          ),
+        ),
+        child: const Row(
+            children: [
+              Icon(Icons.edit, color: Color(0xFF1D5A71)),
+              SizedBox(width: 12),
+              Text(
+                "Edit Name",
+                style: TextStyle(color: Color(0xFF1D5A71), fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+      ),
       content: TextField(
         controller: nameController,
         decoration: const InputDecoration(
           labelText: "Full Name",
           labelStyle: TextStyle(color: Color(0xFF1D5A71)),
-          focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF1D5A71))),
+          enabledBorder: UnderlineInputBorder(
+            borderSide: BorderSide(color: Color(0XFF7AA9CA), width: 1),
+          ),
+          focusedBorder: UnderlineInputBorder(
+            borderSide: const BorderSide(color: Color(0xFF1D5A71), width: 2)
+          ),
         ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+          child: const Text("Cancel", style: TextStyle(color: Color(0xFF1D5A71))),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1D5A71)),

@@ -29,7 +29,7 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
     _fetchLessons();
   }
 
-  // --- Data Logic ---
+  //Data Logic
 
   Future<void> _fetchLessons() async {
     setState(() => _isLoading = true);
@@ -81,7 +81,7 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
     }
   }
 
-  // --- Import / Deep Copy Logic ---
+  //Import / Deep Copy Logic
 
   Future<String> _copyFile(String fullUrl, String folder) async {
     const String bucketPathSegment = '/public/media/';
@@ -153,8 +153,7 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
     }
   }
 
-  // --- Dialogs & UI Helpers ---
-
+  //Dialogs & UI Helpers
   Future<void> _showCreateLessonDialog() async {
     final titleController = TextEditingController();
     return showDialog(
@@ -256,7 +255,29 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text("Import Lesson to...", style: TextStyle(color: Color(0xFF1D5A71))),
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          titlePadding: EdgeInsets.zero,
+          title: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: const BoxDecoration(
+              color: Color(0xFFD0EDF9),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(15),
+                topRight: Radius.circular(15),
+              ),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.content_copy, color: Color(0xFF1D5A71)),
+                SizedBox(width: 12),
+                Text(
+                  "Import Lesson to...",
+                  style: TextStyle(color: Color(0xFF1D5A71), fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
           content: SizedBox(
             width: double.maxFinite,
             child: classesData.isEmpty
@@ -286,8 +307,7 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
     }
   }
 
-  // --- UI Components ---
-
+  //UI Components
   Widget _buildDialogHeader(String title, {IconData? icon}) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -333,6 +353,25 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
     );
   }
 
+  Widget _buildActionSegment({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onPressed,
+    bool isLast = false,
+  }) {
+    return Material(
+      color: color,
+      child: InkWell(
+        onTap: onPressed,
+        child: Container(
+          width: 50,
+          alignment: Alignment.center,
+          child: Icon(icon, color: Colors.white, size: 20),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -370,31 +409,79 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
 
   Widget _buildLessonList() {
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-      itemCount: _lessons.length,
-      itemBuilder: (context, index) {
-        final lesson = _lessons[index];
-        return Card(
-          color: const Color(0xFFA5CEEB),
-          margin: const EdgeInsets.symmetric(vertical: 6),
-          child: ListTile(
-            leading: const Icon(Icons.book, color: Color(0XFF1d5a71)),
-            title: Text(lesson['lessontitle'], style: const TextStyle(color: Color(0xFF1D5A71), fontWeight: FontWeight.bold)),
-            subtitle: const Text("Manage materials", style: TextStyle(color: Color(0xFF1D5A71))),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(icon: const Icon(Icons.edit, color: Colors.white, size: 20), onPressed: () => _showEditLessonDialog(lesson)),
-                IconButton(icon: const Icon(Icons.content_copy, color: Colors.white, size: 20), onPressed: () => _showImportDialog(lesson['lessonid'])),
-                IconButton(icon: const Icon(Icons.quiz, color: Colors.white), onPressed: () {
-                   Navigator.push(context, MaterialPageRoute(builder: (context) => QuizScreen(lessonId: lesson['lessonid'])));
-                }),
-                IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => _showDeleteConfirmDialog(lesson)),
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    itemCount: _lessons.length,
+    itemBuilder: (context, index) {
+      final lesson = _lessons[index];
+      return Card(
+        color: const Color(0xFFA5CEEB),
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.symmetric(vertical: 6),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context, 
+                      MaterialPageRoute(
+                        builder: (context) => CreateFlashcardScreen(
+                          lessonId: lesson['lessonid'], 
+                          lessontitle: lesson['lessontitle']
+                        )
+                      )
+                    );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.book, color: Color(0XFF1d5a71)),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(lesson['lessontitle'], 
+                                style: const TextStyle(color: Color(0xFF1D5A71), fontWeight: FontWeight.bold)),
+                              const Text("Manage materials", 
+                                style: TextStyle(color: Color(0xFF1D5A71), fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+                
+                _buildActionSegment(
+                  icon: Icons.edit,
+                  color: const Color(0xFF7F9BBC).withOpacity(0.6),
+                  onPressed: () => _showEditLessonDialog(lesson),
+                ),
+                _buildActionSegment(
+                  icon: Icons.content_copy,
+                  color: const Color(0xFF7F9BBC).withOpacity(0.8),
+                  onPressed: () => _showImportDialog(lesson['lessonid']),
+                ),
+                _buildActionSegment(
+                  icon: Icons.quiz,
+                  color: const Color(0xFF7F9BBC),
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => QuizScreen(lessonId: lesson['lessonid']))),
+                ),
+                _buildActionSegment(
+                  icon: Icons.delete,
+                  color: const Color(0xFFDC6460),
+                  isLast: true, 
+                  onPressed: () => _showDeleteConfirmDialog(lesson),
+                ),
               ],
             ),
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => CreateFlashcardScreen(lessonId: lesson['lessonid'], lessontitle: lesson['lessontitle'])));
-            },
           ),
         );
       },

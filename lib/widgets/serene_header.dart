@@ -22,6 +22,7 @@ class _SereneHeaderState extends State<SereneHeader> {
   final LayerLink _layerLink = LayerLink();
   OverlayEntry? _overlayEntry;
   bool _isNotificationOpen = false;
+  String? userRole;
 
   List<Map<String, dynamic>> _notificationList = [];
   RealtimeChannel? _notificationChannel;
@@ -30,6 +31,7 @@ class _SereneHeaderState extends State<SereneHeader> {
   void initState() {
     super.initState();
     _setupRealtimeSubscription();
+
   }
 
   void _setupRealtimeSubscription() async {
@@ -37,16 +39,25 @@ class _SereneHeaderState extends State<SereneHeader> {
   if (authId == null) return;
 
   try {
-    // 1. Fetch the Integer ID (userid) from the profile
+    //Fetch the Integer ID (userid) from the profile
     final profileData = await Supabase.instance.client
         .from('profiles')
-        .select('userid')
+        .select('userid, roletype')
         .eq('uid', authId)
         .single();
+    
+    print("Fetched Profile Data: $profileData");
 
     final int teacherIntId = profileData['userid'];
+    final String role = profileData['roletype'];
 
-    // 2. Subscribe using the Integer ID
+    if (mounted){
+      setState(() {
+        userRole = role;
+      });
+    }
+
+    //Subscribe using the Integer ID
     _notificationChannel = Supabase.instance.client
         .channel('public:notification')
         .onPostgresChanges(
@@ -68,7 +79,7 @@ class _SereneHeaderState extends State<SereneHeader> {
         )
         .subscribe();
         
-    // 3. Optional: Initial fetch of existing notifications
+    //Initial fetch of existing notifications
     final existingNotifs = await Supabase.instance.client
         .from('notification')
         .select()
@@ -244,11 +255,11 @@ Future<void> _markAllAsRead() async {
     return AppBar(
       automaticallyImplyLeading: false,
       leading: widget.showBackButton
-          ? IconButton(
-              icon: const Icon(Icons.arrow_back, color: Color(0xFF1D5A71)),
-              onPressed: () => Navigator.of(context).pop(),
-            )
-          : null,
+        ? IconButton(
+            icon: const Icon(Icons.arrow_back, color: Color(0xFF1D5A71)),
+            onPressed: () => Navigator.of(context).pop(),
+          )
+        : null,
       backgroundColor: Colors.white,
       elevation: 0,
       centerTitle: false,
@@ -267,35 +278,35 @@ Future<void> _markAllAsRead() async {
         ],
       ),
       actions: [
-        // Notification Icon with dynamic badge
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            CompositedTransformTarget(
-              link: _layerLink,
-              child: IconButton(
-                icon: Icon(
-                  _isNotificationOpen ? Icons.notifications : Icons.notifications_none,
-                  color: const Color(0xFF1D5A71),
+        if (userRole == 'Teacher')
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              CompositedTransformTarget(
+                link: _layerLink,
+                child: IconButton(
+                  icon: Icon(
+                    _isNotificationOpen ? Icons.notifications : Icons.notifications_none,
+                    color: const Color(0xFF1D5A71),
+                  ),
+                  onPressed: _toggleNotifications,
                 ),
-                onPressed: _toggleNotifications,
               ),
-            ),
-            if (_notificationList.any((n) => n['is_read'] == false)) 
-              Positioned(
-                right: 12,
-                top: 12,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
+              if (_notificationList.any((n) => n['is_read'] == false)) 
+                Positioned(
+                  right: 12,
+                  top: 12,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
                   ),
                 ),
-              ),
-          ],
-        ),
+            ],
+          ),
         IconButton(
           icon: const Icon(Icons.menu, color: Color(0xFF1D5A71)),
           onPressed: () => widget.scaffoldKey.currentState?.openEndDrawer(),
