@@ -54,7 +54,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
         .from('enrollmentrecord')
         .delete()
         .eq('classid', widget.classId)
-        .eq('userid', userId);
+        .eq('studentid', userId);
 
     _fetchStudents();
     
@@ -161,7 +161,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
                             final enrollment = _students[index];
                             final student = enrollment['profiles'];
                             
-                            final String userId = enrollment['userid'].toString();
+                            final String userId = enrollment['studentid'].toString();
                             final String name = student['fullname'] ?? "Unknown Student";
                             final firstLetter = name.isNotEmpty ? name[0] : "?";
 
