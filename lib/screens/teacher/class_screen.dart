@@ -347,14 +347,13 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
         backgroundColor: color,
         behavior: SnackBarBehavior.floating,
         
-        // We set a massive bottom margin to push it to the top of the screen
         margin: EdgeInsets.only(
           bottom: screenHeight - 100, //para mapunta sa taas ung snackbar
           left: screenWidth * 0.8,
           right: 20,
         ),
         
-        dismissDirection: DismissDirection.up, // Allows user to swipe it away upwards
+        dismissDirection: DismissDirection.up, 
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(25),
         ),

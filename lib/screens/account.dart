@@ -74,6 +74,56 @@ Future<void> _fetchAccountInfo() async {
   }
 }
 
+Future<void> _editName() async {
+  final TextEditingController nameController = TextEditingController(text: _userName);
+
+  return showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text("Edit Name", style: TextStyle(color: Color(0xFF1D5A71))),
+      content: TextField(
+        controller: nameController,
+        decoration: const InputDecoration(
+          labelText: "Full Name",
+          labelStyle: TextStyle(color: Color(0xFF1D5A71)),
+          focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF1D5A71))),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1D5A71)),
+          onPressed: () async {
+            final newName = nameController.text.trim();
+            if (newName.isNotEmpty) {
+              try {
+                await supabase
+                    .from('profiles')
+                    .update({'fullname': newName})
+                    .eq('uid', widget.uid);
+
+                if (mounted) {
+                  setState(() => _userName = newName);
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Name updated successfully!")),
+                  );
+                }
+              } catch (e) {
+                debugPrint("Update Error: $e");
+              }
+            }
+          },
+          child: const Text("Save", style: TextStyle(color: Colors.white)),
+        ),
+      ],
+    ),
+  );
+}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -143,7 +193,12 @@ Future<void> _fetchAccountInfo() async {
         const Divider(color: Color(0xFF1D5A71)),
         const SizedBox(height: 30),
         
-        _buildInfoTile(Icons.person, "Full Name", _userName),
+        _buildInfoTile(
+          Icons.person, 
+          "Full Name", 
+          _userName, 
+          onEdit: _editName 
+        ),
         _buildInfoTile(Icons.school, "School", _schoolName),
         
         if (_employeeId != null && _employeeId!.isNotEmpty)
@@ -154,7 +209,7 @@ Future<void> _fetchAccountInfo() async {
     );
   }
 
-  Widget _buildInfoTile(IconData icon, String label, String value) {
+Widget _buildInfoTile(IconData icon, String label, String value, {VoidCallback? onEdit}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 15),
       child: Row(
@@ -168,22 +223,30 @@ Future<void> _fetchAccountInfo() async {
             child: Icon(icon, color: const Color(0xFF1D5A71)),
           ),
           const SizedBox(width: 20),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: const TextStyle(fontSize: 14, color: Color(0xFF1D5A71))),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1D5A71),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(fontSize: 14, color: Color(0xFF1D5A71))),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1D5A71),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
+          if (onEdit != null)
+            IconButton(
+              icon: const Icon(Icons.edit, color: Color(0xFF1D5A71), size: 20),
+              onPressed: onEdit,
+            ),
         ],
       ),
     );
   }
+
 }
