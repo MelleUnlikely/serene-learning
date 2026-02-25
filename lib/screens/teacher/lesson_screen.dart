@@ -308,9 +308,132 @@ Widget build(BuildContext context) {
 
             // Content Section
             Expanded(
+<<<<<<< HEAD
               child: _lessons.isEmpty && !_isLoading
                   ? _buildEmptyState()
                   : _buildLessonList(),
+=======
+              child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _lessons.isEmpty
+                  ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.library_books_outlined, size: 64, color: Colors.grey),
+                        const SizedBox(height: 16),
+                        const Text(
+                          "No lessons created yet!",
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16, top: 0),
+                    itemCount: _lessons.length,
+                    itemBuilder: (context, index) {
+                      final lesson = _lessons[index];
+                      return Card(
+                        color: Color(0xFFA5CEEB), 
+                        child: ListTile(
+                          leading: const Icon(Icons.book, color: Color(0XFF1d5a71)), //icon for the lesson
+                          title: Text(lesson['lessontitle'],
+                            style: TextStyle(color: Color(0xFF1D5A71), fontWeight: FontWeight.bold),),
+                          subtitle: const Text("Manage materials",
+                            style: TextStyle(color: Color(0xFF1D5A71))),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.quiz, color: Colors.white),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => QuizScreen(lessonId: lesson['lessonid'])),
+                                  );
+                                },
+                              ),
+                              IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    backgroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                                    titlePadding: EdgeInsets.zero,
+                                    title: Container(
+                                      padding: const EdgeInsets.all(20),
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFFD0EDF9),
+                                        borderRadius: BorderRadius.only(
+                                          topLeft: Radius.circular(15),
+                                          topRight: Radius.circular(15),
+                                        ),
+                                      ),
+                                      child: const Row(
+                                        children: [
+                                          Icon(Icons.logout, color: Color(0xFF1D5A71)),
+                                          SizedBox(width: 12),
+                                          Text(
+                                            "Delete Lesson?",
+                                            style: TextStyle(color: Color(0xFF1D5A71), fontSize: 18, fontWeight: FontWeight.bold),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    content: Padding(
+                                        padding: EdgeInsets.only(top: 20.0),
+                                        child: Text(
+                                          "Are you sure you want to delete '${lesson['lessontitle']}'? This action cannot be undone.",
+                                          style: TextStyle(color: Color(0xFF1D5A71), fontSize: 16)
+                                        ),
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text("Cancel", style: TextStyle(color: Color(0xFF1D5A71))),
+                                      ),
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.redAccent,
+                                          foregroundColor: Colors.white,
+                                          elevation: 0,
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                        ),
+                                        onPressed: () {
+                                          _deleteLesson(lesson['lessonid']);
+                                          Navigator.pop(context);
+                                        },
+                                        child: const Text("Delete", style: TextStyle(fontWeight: FontWeight.bold)),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                            ],
+                          ),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) =>CreateFlashcardScreen (
+                                  lessonId: lesson['lessonid'],
+                                  lessontitle: lesson['lessontitle']
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
+>>>>>>> ec3fd0f4cab830f957e42c4a3de771566fde5a9c
             ),
           ],
         ),
