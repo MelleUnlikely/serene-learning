@@ -27,16 +27,20 @@ class _StudentListScreenState extends State<StudentListScreen> {
   }
 
   Future<void> _fetchStudents() async {
+    setState(() => _isLoading = true);
     try {
       final data = await supabase
           .from('enrollmentrecord')
           .select('*, profiles(fullname, email)')
           .eq('classid', widget.classId);
 
+      if (mounted) {
       setState(() {
         _students = List<Map<String, dynamic>>.from(data);
         _isLoading = false;
       });
+    }
+    
     } catch (e) {
       debugPrint("Error: $e");
       if (mounted) {
@@ -49,15 +53,18 @@ class _StudentListScreenState extends State<StudentListScreen> {
 
   Future<void> _removeStudent(String userId, String studentName) async {
   try {
-
     await supabase
         .from('enrollmentrecord')
         .delete()
         .eq('classid', widget.classId)
         .eq('studentid', userId);
 
-    _fetchStudents();
-    
+    setState(() {
+      _students.removeWhere((enrollment) => 
+        enrollment['studentid'].toString() == userId
+      );
+    });
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -66,6 +73,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
         ),
       );
     }
+    
   } catch (e) {
     debugPrint("Error: $e");
     if (mounted) {
