@@ -151,7 +151,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             borderSide: BorderSide(color: Color(0XFF7AA9CA), width: 1),
                           ),
                           focusedBorder: UnderlineInputBorder(
-                            borderSide: const BorderSide(color: Color(0xFF1D5A71), width: 2)
+                            borderSide: BorderSide(color: Color(0xFF1D5A71), width: 2)
                           ),
                         ),
                       ),

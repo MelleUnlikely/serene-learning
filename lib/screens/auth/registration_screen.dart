@@ -199,7 +199,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           labelStyle: TextStyle(color: Color(0xFF1D5A71), fontSize: 14, fontWeight: FontWeight.bold),
                           enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0XFF7AA9CA))),
                           focusedBorder: UnderlineInputBorder(
-                            borderSide: const BorderSide(color: Color(0xFF1D5A71), width: 2)
+                            borderSide: BorderSide(color: Color(0xFF1D5A71), width: 2)
                           ),
                         ),
                         items: _schools.map((s) => DropdownMenuItem<int>(

@@ -243,69 +243,102 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
     );
   }
 
-  Future<void> _showImportDialog(int lessonId) async {
-    try {
-      final classesData = await Supabase.instance.client
-          .from('class')
-          .select('classid, classname')
-          .neq('classid', widget.classId);
+Future<void> _showImportDialog(int lessonId) async {
+  try {
 
-      if (!mounted) return;
+    final String? authUid = Supabase.instance.client.auth.currentUser?.id;
 
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-          titlePadding: EdgeInsets.zero,
-          title: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: const BoxDecoration(
-              color: Color(0xFFD0EDF9),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(15),
-                topRight: Radius.circular(15),
-              ),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.content_copy, color: Color(0xFF1D5A71)),
-                SizedBox(width: 12),
-                Text(
-                  "Import Lesson to...",
-                  style: TextStyle(color: Color(0xFF1D5A71), fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ],
+    if (authUid == null) {
+      _showSnackBar("Please log in again.", Colors.red);
+      return;
+    }
+
+    final profileData = await Supabase.instance.client
+        .from('profiles')
+        .select('userid')
+        .eq('uid', authUid) 
+        .single();
+
+    final int numericUserId = profileData['userid'];
+
+    final classesData = await Supabase.instance.client
+        .from('class')
+        .select('classid, classname')
+        .eq('teacherid', numericUserId);
+
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        titlePadding: EdgeInsets.zero,
+        title: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: const BoxDecoration(
+            color: Color(0xFFD0EDF9),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(15),
+              topRight: Radius.circular(15),
             ),
           ),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: classesData.isEmpty
-                ? const Text("No other classes found.")
-                : ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: classesData.length,
-                    itemBuilder: (context, index) {
-                      return ListTile(
-                        leading: const Icon(Icons.class_, color: Color(0xFF1D5A71)),
-                        title: Text(classesData[index]['classname']),
-                        onTap: _isLoading ? null : () {
-                          Navigator.pop(context);
-                          _duplicateLessonWithContent(
-                            originalLessonId: lessonId,
-                            targetClassId: classesData[index]['classid'],
-                          );
-                        },
-                      );
-                    },
-                  ),
+          child: const Row(
+            children: [
+              Icon(Icons.content_copy, color: Color(0xFF1D5A71)),
+              SizedBox(width: 12),
+              Text(
+                "Import/Duplicate Lesson",
+                style: TextStyle(color: Color(0xFF1D5A71), fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
         ),
-      );
-    } catch (e) {
-      _showSnackBar("Could not load classes", Colors.red);
-    }
+        content: SizedBox(
+          width: double.maxFinite,
+          child: classesData.isEmpty
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Text("No classes found in your account.", textAlign: TextAlign.center),
+                )
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: classesData.length,
+                  itemBuilder: (context, index) {
+                    final int targetId = classesData[index]['classid'];
+                    final bool isCurrentClass = targetId == widget.classId;
+
+                    return ListTile(
+                      leading: Icon(
+                        Icons.class_, 
+                        color: isCurrentClass ? Colors.orange : const Color(0xFF1D5A71)
+                      ),
+                      title: Text(
+                        "${classesData[index]['classname']} ${isCurrentClass ? '(Current Class)' : ''}",
+                        style: TextStyle(
+                          fontWeight: isCurrentClass ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                      subtitle: isCurrentClass 
+                        ? const Text("Creates a duplicate in this lesson list") 
+                        : null,
+                      onTap: _isLoading ? null : () {
+                        Navigator.pop(context);
+                        _duplicateLessonWithContent(
+                          originalLessonId: lessonId,
+                          targetClassId: targetId,
+                        );
+                      },
+                    );
+                  },
+                ),
+        ),
+      ),
+    );
+  } catch (e) {
+    _showSnackBar("Could not load your classes", Colors.red);
   }
+}
 
   //UI Components
   Widget _buildDialogHeader(String title, {IconData? icon}) {
