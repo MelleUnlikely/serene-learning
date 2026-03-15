@@ -67,7 +67,6 @@ class _LibraryDialogState extends State<LibraryDialog> {
     }
   }
 
-  // 2.1 Fetch public + school-scoped lessons
     Future<void> _fetchLibraryLessons() async {
     setState(() {
       _isLoading = true;
@@ -84,13 +83,11 @@ class _LibraryDialogState extends State<LibraryDialog> {
 
       final int userSchoolId = profileData['schoolid'] as int;
       
-      // Public lessons
       final publicData = await Supabase.instance.client
           .from('lesson')
           .select('lessonid, lessontitle, visibility, classid')
           .eq('visibility', 'public');
 
-      // School-scoped lessons: use class_with_school view to get classids for this school
       final classRows = await Supabase.instance.client
           .from('class_with_school')
           .select('classid')
@@ -107,7 +104,6 @@ class _LibraryDialogState extends State<LibraryDialog> {
               .eq('visibility', 'school')
               .inFilter('classid', schoolClassIds);
 
-      // Deduplicate by lessonid
       final Map<int, Map<String, dynamic>> seen = {};
       for (final lesson in [...publicData, ...schoolData]) {
         final id = lesson['lessonid'] as int;
@@ -122,7 +118,7 @@ class _LibraryDialogState extends State<LibraryDialog> {
     }
   }
 
-  // 2.3 Import a lesson via RPC
+
   Future<void> _importLesson(int lessonId) async {
     setState(() => _isLoading = true);
     try {
@@ -151,11 +147,8 @@ class _LibraryDialogState extends State<LibraryDialog> {
     }
   }
 
-  // 2.5 UI builders
 
   Widget _buildLessonList() {
-    // Non-lazy ListView so every item is built regardless of scroll position.
-    // This is fine for the expected library size (tens of lessons).
     return ListView(
       children: _lessons.map((lesson) => ListTile(
         leading: const Icon(Icons.book, color: Color(0xFF1D5A71)),
