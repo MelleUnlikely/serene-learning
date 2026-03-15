@@ -2,10 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/widgets/serene_header.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_application_1/widgets/serene_menu.dart';
+import 'student_note_dialog.dart';
 
 class QuizScreen extends StatefulWidget {
   final int lessonId;
-  const QuizScreen({super.key, required this.lessonId});
+  final int classId;
+  final String quizTitle;
+
+  const QuizScreen({
+    super.key,
+    required this.lessonId,
+    required this.classId,
+    required this.quizTitle,
+  });
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();
@@ -58,7 +67,7 @@ Future<void> _loadInitialData() async {
 
       final resultData = await supabase
           .from('quiz_results')
-          .select('score, completed_at, profiles!inner(fullname)')
+          .select('resultid, score, completed_at, studentid, profiles!inner(fullname)')
           .eq('quizid', _existingQuizId!)
           .order('completed_at', ascending: false);
 
@@ -100,7 +109,8 @@ Future<void> _loadInitialData() async {
           return {
             'name': e.key,
             'attempts': attempts,
-            'display_grade': finalGrade.toInt(), 
+            'display_grade': finalGrade.toInt(),
+            'student_uuid': e.value.first['studentid']?.toString() ?? '',
           };
         }).toList();
       });
@@ -453,13 +463,35 @@ Future<void> _saveGeneratedQuiz(List<Map<String, dynamic>> quizData) async {
                             color: const Color(0xFF1D5A71).withOpacity(0.03),
                             child: Column(
                               children: attempts.map<Widget>((attempt) {
+                                final int? resultId = attempt['resultid'] as int?;
+                                final String studentUuid = studentEntry['student_uuid'] ?? '';
                                 return ListTile(
                                   dense: true,
                                   leading: const Icon(Icons.history, size: 18),
                                   title: Text("Completed: ${attempt['completed_at'].toString().substring(0, 16)}"),
-                                  trailing: Text(
-                                    "${attempt['calculated_percent']}%",
-                                    style: const TextStyle(fontWeight: FontWeight.w600),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        "${attempt['calculated_percent']}%",
+                                        style: const TextStyle(fontWeight: FontWeight.w600),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      IconButton(
+                                        icon: const Icon(Icons.note_add_outlined, size: 18, color: Color(0xFF1D5A71)),
+                                        tooltip: 'Add Observation',
+                                        onPressed: () => showDialog(
+                                          context: context,
+                                          builder: (_) => StudentNoteDialog(
+                                            studentUuid: studentUuid,
+                                            studentName: studentEntry['name'],
+                                            classId: widget.classId,
+                                            quizResultId: resultId,
+                                            quizTitle: widget.quizTitle,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 );
                               }).toList(),
