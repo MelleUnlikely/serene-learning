@@ -109,9 +109,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
     Color(0xFF64B5F6),
     Color(0xFFB0BEC5),
   ];
+
+  // Teacher filter (school view only)
+  List<Map<String, dynamic>> _availableTeachers = [];
+  List<int> _selectedTeacherIds = [];
   
   int? _selectedId;
   int? _parentClassId;
+  String _parentClassTitle = '';
   String _currentTitle = "School Overview";
 
   bool includeLessons = false;
@@ -229,7 +234,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   Future<void> _initializeDashboard() async {
     try {
-      await _fetchAvailableYears();
+      await _fetchFilterOptions();
       await Future.wait([
         _fetchSchoolName(),
         _fetchCounts(),
@@ -240,6 +245,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
+  }
+
+  Future<void> _fetchFilterOptions() async {
+    await Future.wait([_fetchAvailableYears(), _fetchAvailableTeachers()]);
   }
 
 Future<void> _fetchAvailableYears() async {
@@ -275,6 +284,50 @@ Future<void> _fetchAvailableYears() async {
       }
     } catch (e) {
       debugPrint("Fetch Years Error: $e");
+    }
+  }
+
+  Future<void> _fetchAvailableTeachers() async {
+    try {
+      // Get distinct teacherids for this school from classes_with_ay
+      final data = await Supabase.instance.client
+          .from('classes_with_ay')
+          .select('teacherid')
+          .eq('schoolid', widget.schoolId);
+
+      final teacherIds = data
+          .map((r) => r['teacherid'])
+          .where((id) => id != null)
+          .toSet()
+          .toList();
+
+      if (teacherIds.isEmpty) return;
+
+      // Fetch fullnames from profiles
+      final profiles = await Supabase.instance.client
+          .from('profiles')
+          .select('userid, fullname')
+          .inFilter('userid', teacherIds);
+
+      final teachers = profiles
+          .map((p) => {
+            'teacherid': p['userid'],
+            'fullname': p['fullname']?.toString() ?? 'Unknown',
+          })
+          .toList()
+        ..sort((a, b) => (a['fullname'] as String).compareTo(b['fullname'] as String));
+
+      if (mounted) {
+        setState(() {
+          _availableTeachers = List<Map<String, dynamic>>.from(teachers);
+          // Default: all teachers selected
+          _selectedTeacherIds = _availableTeachers
+              .map((t) => t['teacherid'] as int)
+              .toList();
+        });
+      }
+    } catch (e) {
+      debugPrint("Fetch Teachers Error: $e");
     }
   }
 
@@ -454,11 +507,15 @@ Future<void> _fetchGraphData() async {
         if (_selectedYears.isEmpty) {
           fetchedData = [];
         } else {
-          fetchedData = await client
+          var query = client
               .from('classes_with_ay')
               .select('teacherid, classname, school_year')
               .eq('schoolid', widget.schoolId)
               .inFilter('school_year', _selectedYears);
+          if (_selectedTeacherIds.isNotEmpty) {
+            query = query.inFilter('teacherid', _selectedTeacherIds);
+          }
+          fetchedData = await query;
         }
         break;
       case DashboardView.classDetail:
@@ -616,7 +673,7 @@ Future<void> _fetchGraphData() async {
       setState(() {
         _currentView = DashboardView.classDetail;
         _selectedId = meta['classid'] as int?;
-        _currentTitle = "Class: \${meta['classname'] ?? 'Unknown'}";
+        _currentTitle = "Class: ${meta['classname'] ?? 'Unknown'}";
       });
       if (_selectedId == null) { _resetToHome("Navigation Error: classid null"); return; }
       _fetchGraphData();
@@ -629,9 +686,10 @@ Future<void> _fetchGraphData() async {
     setState(() {
       if (_currentView == DashboardView.classDetail) {
         _parentClassId = _selectedId;
+        _parentClassTitle = _currentTitle;
         _currentView = DashboardView.lessonDetail;
         _selectedId = item['lessonid'] ?? item['lesson_id'];
-        _currentTitle = "Lesson: \${item['lessontitle'] ?? 'Unknown'}";
+        _currentTitle = "Lesson: ${item['lessontitle'] ?? 'Unknown'}";
       }
     });
 
@@ -784,7 +842,7 @@ Future<void> _refreshGraphData() async {
   Widget _buildGraphSection() {
     return Container(
       padding: const EdgeInsets.all(24),
-      height: 560,
+      height: 680,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -803,10 +861,11 @@ Future<void> _refreshGraphData() async {
                       if (_currentView == DashboardView.lessonDetail) {
                         _currentView = DashboardView.classDetail;
                         _selectedId = _parentClassId;
-                        _currentTitle = "Class View";
+                        _currentTitle = _parentClassTitle.isNotEmpty ? _parentClassTitle : "Class View";
                       } else {
                         _currentView = DashboardView.school;
                         _currentTitle = "School Overview";
+                        _selectedId = null;
                       }
                     });
                     _fetchGraphData();
@@ -828,44 +887,92 @@ Future<void> _refreshGraphData() async {
                 : "Performance Accuracy Table",
             style: const TextStyle(fontSize: 14, color: Color(0xFF1D5A71), fontWeight: FontWeight.w500),
           ),
-          if (_currentView == DashboardView.school && _availableYears.isNotEmpty) ...[  
+          if (_currentView == DashboardView.school) ...[  
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: List.generate(_availableYears.length, (yi) {
-                final year = _availableYears[yi];
-                final isSelected = _selectedYears.contains(year);
-                return FilterChip(
-                  label: Text(year, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : const Color(0xFF1D5A71))),
-                  selected: isSelected,
-                  selectedColor: const Color(0xFF1D5A71),
-                  backgroundColor: Colors.white,
-                  side: BorderSide(color: isSelected ? const Color(0xFF1D5A71) : const Color(0xFF7AA9CA)),
-                  checkmarkColor: Colors.white,
-                  showCheckmark: false,
-                  onSelected: (val) {
-                    setState(() {
-                      if (val) {
-                        if (_selectedYears.length < 3) _selectedYears.add(year);
-                      } else {
-                        if (_selectedYears.length > 1) _selectedYears.remove(year);
-                      }
-                    });
-                    _fetchGraphData();
-                  },
-                );
-              }),
-            ),
-            const SizedBox(height: 8),
-            _buildYearLegend(),
+            // ── Year filter ──
+            if (_availableYears.isNotEmpty) ...[
+              const Text("Filter by Year",
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF1D5A71))),
+              const SizedBox(height: 4),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: List.generate(_availableYears.length, (yi) {
+                  final year = _availableYears[yi];
+                  final isSelected = _selectedYears.contains(year);
+                  return FilterChip(
+                    label: Text(year, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : const Color(0xFF1D5A71))),
+                    selected: isSelected,
+                    selectedColor: const Color(0xFF1D5A71),
+                    backgroundColor: Colors.white,
+                    side: BorderSide(color: isSelected ? const Color(0xFF1D5A71) : const Color(0xFF7AA9CA)),
+                    showCheckmark: false,
+                    onSelected: (val) {
+                      setState(() {
+                        if (val) {
+                          if (_selectedYears.length < 3) _selectedYears.add(year);
+                        } else {
+                          if (_selectedYears.length > 1) _selectedYears.remove(year);
+                        }
+                      });
+                      _fetchGraphData();
+                    },
+                  );
+                }),
+              ),
+              const SizedBox(height: 4),
+              _buildYearLegend(),
+            ],
+            // ── Teacher filter ──
+            if (_availableTeachers.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              const Text("Filter by Teacher",
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF1D5A71))),
+              const SizedBox(height: 4),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: _availableTeachers.map((t) {
+                  final int tid = t['teacherid'] as int;
+                  final String name = t['fullname'] as String;
+                  final bool isSelected = _selectedTeacherIds.contains(tid);
+                  return FilterChip(
+                    label: Text(name, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : const Color(0xFF1D5A71))),
+                    selected: isSelected,
+                    selectedColor: const Color(0xFF1D5A71),
+                    backgroundColor: Colors.white,
+                    side: BorderSide(color: isSelected ? const Color(0xFF1D5A71) : const Color(0xFF7AA9CA)),
+                    showCheckmark: false,
+                    onSelected: (val) {
+                      setState(() {
+                        if (val) {
+                          _selectedTeacherIds.add(tid);
+                        } else {
+                          if (_selectedTeacherIds.length > 1) _selectedTeacherIds.remove(tid);
+                        }
+                      });
+                      _fetchGraphData();
+                    },
+                  );
+                }).toList(),
+              ),
+            ],
           ],
-          const SizedBox(height: 30),
+          const SizedBox(height: 16),
           Expanded(
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : graphData.isEmpty
-                    ? const Center(child: Text("No performance data found"))
+                : (_selectedYears.isEmpty || (_currentView == DashboardView.school && _selectedTeacherIds.isEmpty))
+                    ? const Center(
+                        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                          Icon(Icons.filter_list_off, size: 40, color: Colors.grey),
+                          SizedBox(height: 8),
+                          Text("Please select filters to view data",
+                              style: TextStyle(color: Colors.grey)),
+                        ]),
+                      )
+                    : graphData.isEmpty
+                        ? const Center(child: Text("No performance data found"))
                     : BarChart(
                       BarChartData(
                         maxY: 100,
