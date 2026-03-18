@@ -56,6 +56,14 @@ double _calculatePolicyScore(List<dynamic> attempts, String policy) {
   return finalGrades.reduce((a, b) => a + b) / finalGrades.length;
 }
 
+Color _scoreColor(double score) {
+  if (score < 60) return Colors.red;
+  if (score < 71) return Colors.orange;
+  if (score < 81) return Colors.yellow.shade700;
+  if (score < 91) return Colors.lightGreen;
+  return const Color(0xFF1B5E20);
+}
+
 class ReportData {
   final String className;
   final double classAverage;
@@ -89,7 +97,18 @@ class _AdminDashboardState extends State<AdminDashboard> {
   String schoolName = "Loading...";
   List<BarChartGroupData> graphData = [];
   List<String> labels = [];
+  List<String> tooltipExtras = [];
   List<dynamic> _currentRawData = [];
+  Map<int, Map<String, dynamic>> _schoolBarMeta = {}; // index -> {classname, classid (first year's)}
+
+  // Multi-year comparison (school view only)
+  List<String> _availableYears = [];
+  List<String> _selectedYears = [];
+  static const List<Color> _yearColors = [
+    Color(0xFF1D5A71),
+    Color(0xFF64B5F6),
+    Color(0xFFB0BEC5),
+  ];
   
   int? _selectedId;
   int? _parentClassId;
@@ -103,9 +122,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
   @override
   void initState() {
     super.initState();
+    _selectedYears = [_getCurrentAY()];
     _initializeDashboard();
   }
 
+  String _getCurrentAY() {
+    final now = DateTime.now();
+    final year = now.month >= 8 ? now.year : now.year - 1;
+    return '$year-${year + 1}';
+  }
   void _showProgressReport() {
   showDialog(
     context: context,
@@ -204,6 +229,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   Future<void> _initializeDashboard() async {
     try {
+      await _fetchAvailableYears();
       await Future.wait([
         _fetchSchoolName(),
         _fetchCounts(),
@@ -213,6 +239,42 @@ class _AdminDashboardState extends State<AdminDashboard> {
       debugPrint("Dashboard Init Error: $e");
     } finally {
       if (mounted) setState(() => isLoading = false);
+    }
+  }
+
+Future<void> _fetchAvailableYears() async {
+    try {
+      final data = await Supabase.instance.client
+          .from('classes_with_ay')
+          .select('school_year')
+          .eq('schoolid', widget.schoolId);
+
+      final years = data
+          .map((r) => r['school_year']?.toString() ?? '')
+          .where((y) => y.isNotEmpty)
+          .toSet()
+          .toList()
+        ..sort((a, b) => b.compareTo(a)); // descending
+
+      if (mounted) {
+        setState(() {
+          _availableYears = years;
+          if (years.isNotEmpty) {
+            final currentAY = _getCurrentAY();
+            // Keep current selection if it exists in DB, otherwise fallback to most recent
+            final validSelected = _selectedYears.where((y) => years.contains(y)).toList();
+            if (validSelected.isNotEmpty) {
+              _selectedYears = validSelected;
+            } else {
+              // Current AY not in DB — fallback to most recent
+              _selectedYears = [years.first];
+              debugPrint("AY $currentAY not found in DB, falling back to ${years.first}");
+            }
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint("Fetch Years Error: $e");
     }
   }
 
@@ -389,7 +451,15 @@ Future<void> _fetchGraphData() async {
 
     switch (_currentView) {
       case DashboardView.school:
-        fetchedData = await client.from('class_performance_stats').select().eq('schoolid', widget.schoolId);
+        if (_selectedYears.isEmpty) {
+          fetchedData = [];
+        } else {
+          fetchedData = await client
+              .from('classes_with_ay')
+              .select('teacherid, classname, school_year')
+              .eq('schoolid', widget.schoolId)
+              .inFilter('school_year', _selectedYears);
+        }
         break;
       case DashboardView.classDetail:
         fetchedData = await client.from('lesson_performance_stats').select().eq('classid', _selectedId!);
@@ -415,72 +485,153 @@ Future<void> _fetchGraphData() async {
 
   Future<void> _processGraphPoints(List<dynamic> fetchedData) async {
   List<String> newLabels = [];
+  List<String> newTooltipExtras = [];
   List<BarChartGroupData> newGraphData = [];
 
-  for (int i = 0; i < fetchedData.length; i++) {
-    final item = fetchedData[i];
-    double score = 0.0;
-    String label = "";
+  if (_currentView == DashboardView.school) {
+    _schoolBarMeta = {};
+    final client = Supabase.instance.client;
 
-    if (_currentView == DashboardView.school) {
-      label = item['classname']?.toString() ?? '';
-      score = (item['average_accuracy'] as num? ?? 0.0).toDouble();
-    } 
-    else if (_currentView == DashboardView.classDetail) {
-      label = item['lessontitle']?.toString() ?? '';
- 
-      final attempts = await Supabase.instance.client
-          .from('student_lesson_stats')
-          .select()
-          .eq('lessonid', item['lessonid']);
-      
-      score = _calculatePolicyScore(attempts, item['grading_policy'] ?? 'highest');
-    } 
-    else if (_currentView == DashboardView.lessonDetail) {
-      label = item['fullname']?.toString() ?? '';
-      score = (item['final_score'] as num? ?? 0.0).toDouble();
+    // Group rows by classname, track which years exist for each class
+    // fetchedData rows: { teacherid, classname, school_year }
+    final Map<String, Set<String>> classnameYears = {};
+    for (final row in fetchedData) {
+      final name = row['classname']?.toString() ?? '';
+      final year = row['school_year']?.toString() ?? '';
+      if (name.isEmpty || year.isEmpty) continue;
+      classnameYears.putIfAbsent(name, () => {}).add(year);
     }
 
-    newLabels.add(label);
-    newGraphData.add(
-      BarChartGroupData(
+    // Resolve classid for each classname from class_performance_stats
+    final Map<String, int> classnameToId = {};
+    final perfStats = await client
+        .from('class_performance_stats')
+        .select('classid, classname')
+        .eq('schoolid', widget.schoolId);
+    for (final row in perfStats) {
+      final name = row['classname']?.toString() ?? '';
+      final cid = row['classid'] as int?;
+      if (name.isNotEmpty && cid != null) classnameToId[name] = cid;
+    }
+
+    final sortedNames = classnameYears.keys.toList()..sort();
+
+    for (int i = 0; i < sortedNames.length; i++) {
+      final name = sortedNames[i];
+      final yearsForClass = classnameYears[name]!;
+      final cid = classnameToId[name];
+      List<BarChartRodData> rods = [];
+
+      for (int yi = 0; yi < _selectedYears.length; yi++) {
+        final year = _selectedYears[yi];
+        double score = 0.0;
+        // Only fetch score if this class exists for this year
+        if (yearsForClass.contains(year) && cid != null) {
+          final stats = await client
+              .from('class_performance_stats')
+              .select('average_accuracy')
+              .eq('classid', cid)
+              .maybeSingle();
+          score = (stats?['average_accuracy'] as num? ?? 0.0).toDouble();
+        }
+        rods.add(BarChartRodData(
+          toY: score,
+          color: _yearColors[yi % _yearColors.length],
+          width: 14,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+        ));
+      }
+
+      newLabels.add(name);
+      _schoolBarMeta[i] = {'classname': name, 'classid': cid};
+      newTooltipExtras.add('');
+      newGraphData.add(BarChartGroupData(
+        x: i,
+        groupVertically: false,
+        barsSpace: 4,
+        barRods: rods,
+      ));
+    }
+  } else {
+    for (int i = 0; i < fetchedData.length; i++) {
+      final item = fetchedData[i];
+      double score = 0.0;
+      String label = "";
+
+      if (_currentView == DashboardView.classDetail) {
+        label = item['lessontitle']?.toString() ?? '';
+        final attempts = await Supabase.instance.client
+            .from('student_lesson_stats')
+            .select()
+            .eq('lessonid', item['lessonid']);
+        final String policy = (item['grading_policy'] ?? 'highest').toString();
+        score = _calculatePolicyScore(attempts, policy);
+        newTooltipExtras.add('Policy: ${policy[0].toUpperCase()}${policy.substring(1)}');
+      } else if (_currentView == DashboardView.lessonDetail) {
+        label = item['fullname']?.toString() ?? '';
+        score = (item['final_score'] as num? ?? 0.0).toDouble();
+        newTooltipExtras.add('');
+      }
+
+      newLabels.add(label);
+      newGraphData.add(BarChartGroupData(
         x: i,
         barRods: [
           BarChartRodData(
             toY: score,
-            color: const Color(0xFF1D5A71),
+            color: _scoreColor(score),
             width: 20,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
           )
         ],
-      ),
-    );
+      ));
+    }
   }
 
   if (mounted) {
     setState(() {
       labels = newLabels;
       graphData = newGraphData;
+      tooltipExtras = newTooltipExtras;
     });
   }
 }
   
   void _handleNavigation(int index) {
+    // High-risk drill-down: show teacher notes for red bars at student level
+    if (_currentView == DashboardView.lessonDetail) {
+      if (index < 0 || index >= _currentRawData.length) return;
+      final item = _currentRawData[index];
+      final double score = (item['final_score'] as num? ?? 0).toDouble();
+      if (score < 60) {
+        _showHighRiskNotesDrillDown(item, score);
+      }
+      return;
+    }
+
+    if (_currentView == DashboardView.school) {
+      // School view uses _schoolBarMeta for drill-down (multi-year grouped bars)
+      final meta = _schoolBarMeta[index];
+      if (meta == null) return;
+      setState(() {
+        _currentView = DashboardView.classDetail;
+        _selectedId = meta['classid'] as int?;
+        _currentTitle = "Class: \${meta['classname'] ?? 'Unknown'}";
+      });
+      if (_selectedId == null) { _resetToHome("Navigation Error: classid null"); return; }
+      _fetchGraphData();
+      return;
+    }
+
     if (index < 0 || index >= _currentRawData.length) return;
     final item = _currentRawData[index];
 
     setState(() {
-      if (_currentView == DashboardView.school) {
-        // Drills down into a specific class
-        _currentView = DashboardView.classDetail;
-        _selectedId = item['classid'] ?? item['class_id']; 
-        _currentTitle = "Class: ${item['classname'] ?? 'Unknown'}";
-      } else if (_currentView == DashboardView.classDetail) {
-        // Drills down into a specific lesson
-        _parentClassId = _selectedId; 
+      if (_currentView == DashboardView.classDetail) {
+        _parentClassId = _selectedId;
         _currentView = DashboardView.lessonDetail;
         _selectedId = item['lessonid'] ?? item['lesson_id'];
-        _currentTitle = "Lesson: ${item['lessontitle'] ?? 'Unknown'}";
+        _currentTitle = "Lesson: \${item['lessontitle'] ?? 'Unknown'}";
       }
     });
 
@@ -490,6 +641,24 @@ Future<void> _fetchGraphData() async {
     }
 
     _fetchGraphData();
+  }
+
+  void _showHighRiskNotesDrillDown(Map<String, dynamic> item, double score) {
+    final String studentId = item['studentid']?.toString() ?? '';
+    final String studentName = item['fullname']?.toString() ?? 'Unknown Student';
+    final int? classId = item['classid'] as int?;
+    final int? lessonId = _selectedId; // lessonDetail view — _selectedId is the lessonid
+
+    showDialog(
+      context: context,
+      builder: (_) => _HighRiskNotesDialog(
+        studentId: studentId,
+        studentName: studentName,
+        classId: classId,
+        lessonId: lessonId,
+        score: score,
+      ),
+    );
   }
 
   void _resetToHome(String reason) {
@@ -615,7 +784,7 @@ Future<void> _refreshGraphData() async {
   Widget _buildGraphSection() {
     return Container(
       padding: const EdgeInsets.all(24),
-      height: 500,
+      height: 560,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -659,6 +828,38 @@ Future<void> _refreshGraphData() async {
                 : "Performance Accuracy Table",
             style: const TextStyle(fontSize: 14, color: Color(0xFF1D5A71), fontWeight: FontWeight.w500),
           ),
+          if (_currentView == DashboardView.school && _availableYears.isNotEmpty) ...[  
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: List.generate(_availableYears.length, (yi) {
+                final year = _availableYears[yi];
+                final isSelected = _selectedYears.contains(year);
+                return FilterChip(
+                  label: Text(year, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : const Color(0xFF1D5A71))),
+                  selected: isSelected,
+                  selectedColor: const Color(0xFF1D5A71),
+                  backgroundColor: Colors.white,
+                  side: BorderSide(color: isSelected ? const Color(0xFF1D5A71) : const Color(0xFF7AA9CA)),
+                  checkmarkColor: Colors.white,
+                  showCheckmark: false,
+                  onSelected: (val) {
+                    setState(() {
+                      if (val) {
+                        if (_selectedYears.length < 3) _selectedYears.add(year);
+                      } else {
+                        if (_selectedYears.length > 1) _selectedYears.remove(year);
+                      }
+                    });
+                    _fetchGraphData();
+                  },
+                );
+              }),
+            ),
+            const SizedBox(height: 8),
+            _buildYearLegend(),
+          ],
           const SizedBox(height: 30),
           Expanded(
             child: isLoading
@@ -684,14 +885,29 @@ Future<void> _refreshGraphData() async {
                           touchTooltipData: BarTouchTooltipData(
                             getTooltipColor: (_) => const Color(0xFF1D5A71),
                             getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                              final String extra = groupIndex < tooltipExtras.length ? tooltipExtras[groupIndex] : '';
+                              String yearLabel = '';
+                              if (_currentView == DashboardView.school && rodIndex < _selectedYears.length) {
+                                yearLabel = _selectedYears[rodIndex];
+                              }
                               return BarTooltipItem(
                                 '${labels[groupIndex]}\n',
                                 const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                                 children: [
+                                  if (yearLabel.isNotEmpty)
+                                    TextSpan(
+                                      text: '$yearLabel\n',
+                                      style: const TextStyle(color: Colors.white70, fontSize: 11),
+                                    ),
                                   TextSpan(
                                     text: '${rod.toY.toStringAsFixed(1)}%',
                                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w400),
                                   ),
+                                  if (extra.isNotEmpty)
+                                    TextSpan(
+                                      text: '\n$extra',
+                                      style: const TextStyle(color: Colors.white70, fontSize: 11),
+                                    ),
                                 ],
                               );
                             },
@@ -719,12 +935,35 @@ Future<void> _refreshGraphData() async {
                               },
                             ),
                           ),
-                          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 36,
+                              interval: 20,
+                              getTitlesWidget: (value, meta) {
+                                if (value % 20 == 0) {
+                                  return Text(
+                                    '${value.toInt()}%',
+                                    style: const TextStyle(fontSize: 10, color: Color(0xFF1D5A71)),
+                                  );
+                                }
+                                return const SizedBox();
+                              },
+                            ),
+                          ),
                           topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                           rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                         ),
                         borderData: FlBorderData(show: false),
-                        gridData: const FlGridData(show: false),
+                        gridData: FlGridData(
+                          show: true,
+                          drawVerticalLine: false,
+                          horizontalInterval: 20,
+                          getDrawingHorizontalLine: (_) => FlLine(
+                            color: Colors.grey.withOpacity(0.15),
+                            strokeWidth: 1,
+                          ),
+                        ),
                       ),
                     ),
           ),
@@ -733,6 +972,25 @@ Future<void> _refreshGraphData() async {
     );
   }
 
+
+  Widget _buildYearLegend() {
+    return Wrap(
+      spacing: 16,
+      runSpacing: 4,
+      children: List.generate(_selectedYears.length, (yi) {
+        final year = _selectedYears[yi];
+        final color = _yearColors[yi % _yearColors.length];
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 12, height: 12, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3))),
+            const SizedBox(width: 4),
+            Text(year, style: const TextStyle(fontSize: 11, color: Color(0xFF1D5A71))),
+          ],
+        );
+      }),
+    );
+  }
   Widget _buildQuickActions() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -769,85 +1027,414 @@ Future<void> _refreshGraphData() async {
     );
   }
 
+
   void _showUserPopup(String roletype) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          child: Container(
-            width: MediaQuery.of(context).size.width * 0.4,
-            height: MediaQuery.of(context).size.height * 0.7,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      builder: (_) => _UserDirectoryDialog(
+        roletype: roletype,
+        schoolId: widget.schoolId,
+      ),
+    );
+  }
+}
+
+class _UserDirectoryDialog extends StatefulWidget {
+  final String roletype;
+  final int schoolId;
+
+  const _UserDirectoryDialog({required this.roletype, required this.schoolId});
+
+  @override
+  State<_UserDirectoryDialog> createState() => _UserDirectoryDialogState();
+}
+
+class _UserDirectoryDialogState extends State<_UserDirectoryDialog> {
+  final supabase = Supabase.instance.client;
+  final TextEditingController _searchController = TextEditingController();
+
+  List<Map<String, dynamic>> _allUsers = [];
+  List<Map<String, dynamic>> _filtered = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUsers();
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      _filtered = _allUsers.where((u) {
+        final name = (u['fullname'] ?? '').toString().toLowerCase();
+        final email = (u['email'] ?? '').toString().toLowerCase();
+        return name.contains(query) || email.contains(query);
+      }).toList();
+    });
+  }
+
+  Future<void> _fetchUsers() async {
+    try {
+      final data = await supabase
+          .from('profiles')
+          .select('email, fullname, status')
+          .eq('roletype', widget.roletype)
+          .eq('schoolid', widget.schoolId)
+          .order('fullname');
+
+      if (mounted) {
+        setState(() {
+          _allUsers = List<Map<String, dynamic>>.from(data);
+          _filtered = _allUsers;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _errorMessage = e.toString());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.4,
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text("$roletype Directory", 
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1D5A71))),
-                    IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close, color: Color(0xFF1D5A71))),
-                  ],
-                ),
-                const Divider(color: Color(0xFF1D5A71)),
-                Expanded(
-                  child: FutureBuilder(
-                    future: Supabase.instance.client
-                        .from('profiles')
-                        .select('email, fullname, schoolid, status')
-                        .eq('roletype', roletype)
-                        .eq('schoolid', widget.schoolId),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasError) {
-                        return Center(child: Text("Error: ${snapshot.error}"));
-                      }
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      if (!snapshot.hasData || (snapshot.data as List).isEmpty) {
-                        return const Center(child: Text("No records found."));
-                      }
-
-                      final users = snapshot.data as List<dynamic>;
-
-                      return ListView.separated(
-                        itemCount: users.length,
-                        separatorBuilder: (context, index) => const Divider(color: Color(0xFF1D5A71)),
-                        itemBuilder: (context, index) {
-                          final user = users[index];
-                          return ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            leading: CircleAvatar(
-                              backgroundColor: const Color(0xFF1D5A71),
-                              child: Text(user['fullname']?[0] ?? user['email'][0].toUpperCase(), 
-                                style: const TextStyle(color: Colors.white)),
-                            ),
-                            title: Text(user['fullname'] ?? 'No Name Provided', 
-                              style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1D5A71))),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(user['email']),
-                                Text("Status: ${user['status']}", 
-                                  style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                              ],
-                            ),
-                          );
-                        },
-                      );
-                    },
+                Text(
+                  '${widget.roletype} Directory',
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1D5A71),
                   ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close, color: Color(0xFF1D5A71)),
                 ),
               ],
             ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _searchController,
+              cursorColor: const Color(0xFF1D5A71),
+              decoration: InputDecoration(
+                hintText: 'Search by name or email...',
+                hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+                prefixIcon: const Icon(Icons.search, color: Color(0xFF1D5A71)),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, size: 18, color: Colors.grey),
+                        onPressed: () => _searchController.clear(),
+                      )
+                    : null,
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Color(0xFF7AA9CA)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Color(0xFF1D5A71), width: 2),
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Divider(color: Color(0xFF1D5A71)),
+            Expanded(child: _buildBody()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1D5A71)),
+        ),
+      );
+    }
+    if (_errorMessage != null) {
+      return Center(child: Text('Error: $_errorMessage'));
+    }
+    if (_filtered.isEmpty) {
+      return Center(
+        child: Text(
+          _searchController.text.isEmpty ? 'No records found.' : 'No results for "${_searchController.text}".',
+          style: const TextStyle(color: Colors.grey),
+        ),
+      );
+    }
+    return ListView.separated(
+      itemCount: _filtered.length,
+      separatorBuilder: (_, __) => const Divider(color: Color(0xFFD0EDF9)),
+      itemBuilder: (_, index) {
+        final user = _filtered[index];
+        final String initial = (user['fullname']?.isNotEmpty == true)
+            ? user['fullname'][0].toUpperCase()
+            : (user['email']?.isNotEmpty == true ? user['email'][0].toUpperCase() : '?');
+        return ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: CircleAvatar(
+            backgroundColor: const Color(0xFF1D5A71),
+            child: Text(initial, style: const TextStyle(color: Colors.white)),
+          ),
+          title: Text(
+            user['fullname'] ?? 'No Name Provided',
+            style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1D5A71)),
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(user['email'] ?? ''),
+              Text(
+                'Status: ${user['status'] ?? 'N/A'}',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
           ),
         );
       },
     );
   }
+}
+
+class _HighRiskNotesDialog extends StatefulWidget {
+  final String studentId;
+  final String studentName;
+  final int? classId;
+  final int? lessonId;
+  final double score;
+
+  const _HighRiskNotesDialog({
+    required this.studentId,
+    required this.studentName,
+    this.classId,
+    this.lessonId,
+    required this.score,
+  });
+
+  @override
+  State<_HighRiskNotesDialog> createState() => _HighRiskNotesDialogState();
+}
+
+class _HighRiskNotesDialogState extends State<_HighRiskNotesDialog> {
+  final supabase = Supabase.instance.client;
+  List<Map<String, dynamic>> _notes = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchNotes();
+  }
+
+  Future<void> _fetchNotes() async {
+    if (!mounted) return;
+    setState(() { _isLoading = true; _errorMessage = null; });
+    try {
+      var query = supabase
+          .from('student_notes')
+          .select(
+            'note_text, category, created_at, '
+            'quiz_results:quiz_result_id!inner ( '
+            '  quiz:quizid!inner ( lessonid, lesson:lessonid ( lessontitle ) ) '
+            ')',
+          )
+          .eq('studentid', widget.studentId)
+          .eq('quiz_results.quiz.lessonid', widget.lessonId!);
+      if (widget.classId != null) query = query.eq('classid', widget.classId!);
+      final data = await query.order('created_at', ascending: false);
+      if (mounted) setState(() => _notes = List<Map<String, dynamic>>.from(data));
+    } catch (e) {
+      debugPrint('High risk notes fetch error: $e');
+      if (mounted) setState(() => _errorMessage = e.toString());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 520, maxHeight: 580),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 20, offset: Offset(0, 8))],
+        ),
+        child: Column(
+          children: [
+            _buildHeader(),
+            Expanded(child: _buildBody()),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Close', style: TextStyle(color: Color(0xFF1D5A71))),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: const BoxDecoration(
+        color: Color(0xFFD0EDF9),
+        borderRadius: BorderRadius.only(topLeft: Radius.circular(15), topRight: Radius.circular(15)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.warning_amber_rounded, color: Colors.red),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(widget.studentName,
+                    style: const TextStyle(color: Color(0xFF1D5A71), fontSize: 17, fontWeight: FontWeight.bold)),
+                Text('Score: ${widget.score.toStringAsFixed(1)}% — High Risk',
+                    style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+          IconButton(icon: const Icon(Icons.close, color: Color(0xFF1D5A71)), onPressed: () => Navigator.pop(context)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) return const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1D5A71))));
+    if (_errorMessage != null) return Center(child: Padding(padding: const EdgeInsets.all(16), child: Text('Failed to load notes: $_errorMessage', textAlign: TextAlign.center, style: const TextStyle(color: Colors.red))));
+    if (_notes.isEmpty) {
+      return const Center(
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Icon(Icons.notes_outlined, size: 40, color: Colors.grey),
+          SizedBox(height: 8),
+          Text('No teacher observations recorded for this lesson.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+        ]),
+      );
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: _notes.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemBuilder: (_, i) => _buildNoteCard(_notes[i]),
+    );
+  }
+
+ Widget _buildNoteCard(Map<String, dynamic> note) {
+  final bool isQuiz = note['category'] == 'quiz_assessment';
+  final String rawDate = note['created_at']?.toString() ?? '';
+  final String date = rawDate.length >= 10 ? rawDate.substring(0, 10) : rawDate;
+
+  // 1. Declare as a nullable String
+  String? quizTitle;
+
+  if (isQuiz) {
+    // 2. Extract and cast each level individually
+    final dynamic quizResultsRaw = note['quiz_results'];
+    
+    if (quizResultsRaw is Map) {
+      final dynamic quizRaw = quizResultsRaw['quiz'];
+      
+      if (quizRaw is Map) {
+        final dynamic lessonRaw = quizRaw['lesson'];
+        
+        if (lessonRaw is Map) {
+          // 3. Final extraction with a forced String conversion
+          quizTitle = lessonRaw['lessontitle']?.toString();
+        }
+      }
+    }
+  }
+
+  return Container(
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: isQuiz 
+          ? const Color(0xFF1D5A71).withOpacity(0.05) 
+          : const Color(0xFFD0EDF9).withOpacity(0.5),
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(
+          color: isQuiz 
+              ? const Color(0xFF1D5A71).withOpacity(0.2) 
+              : const Color(0xFFD0EDF9)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          Icon(isQuiz ? Icons.quiz_outlined : Icons.person_outline, 
+              size: 14, color: const Color(0xFF1D5A71)),
+          const SizedBox(width: 6),
+          Text(isQuiz ? 'Quiz Assessment' : 'General Observation',
+              style: const TextStyle(
+                  fontSize: 11, 
+                  fontWeight: FontWeight.bold, 
+                  color: Color(0xFF1D5A71))),
+          const Spacer(),
+          Text(date, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+        ]),
+        if (isQuiz && quizTitle != null) ...[
+          const SizedBox(height: 4),
+          Row(children: [
+            const Icon(Icons.book_outlined, size: 12, color: Colors.grey),
+            const SizedBox(width: 4),
+            // Added Expanded to prevent overflow if the title is too long
+            Expanded(
+              child: Text(
+                quizTitle,
+                style: const TextStyle(
+                    fontSize: 11, 
+                    color: Colors.grey, 
+                    fontStyle: FontStyle.italic),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ]),
+        ],
+        const SizedBox(height: 6),
+        Text(note['note_text'] ?? '', 
+            style: const TextStyle(fontSize: 13, color: Color(0xFF1D5A71))),
+      ],
+    ),
+  );
+}
+
 }
