@@ -23,6 +23,7 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
   String _curriculumLevel = 'Beginner';
   bool _isLoading = false;
   List<Map<String, dynamic>> _myClasses = [];
+  List<Map<String, dynamic>> _activityLogs = [];
 
   final List<String> _levels = ['Beginner', 'Intermediate', 'Advanced'];
 
@@ -63,6 +64,51 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
     }
   }
 
+  void _createClassDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder( // StatefulBuilder allows dropdown to work inside dialog
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            titlePadding: EdgeInsets.zero,
+            title: _buildDialogHeader("Create New Class", icon: Icons.add_business_rounded),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _classNameController,
+                    decoration: _buildInputDecoration("Class Name"),
+                  ),
+                  const SizedBox(height: 20),
+                  DropdownButtonFormField<String>(
+                    value: _curriculumLevel,
+                    dropdownColor: Colors.white,
+                    items: _levels.map((l) => DropdownMenuItem(value: l, child: Text(l))).toList(),
+                    onChanged: (val) => setDialogState(() => _curriculumLevel = val!),
+                    decoration: _buildInputDecoration("Curriculum Level"),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+              ),
+              _buildPrimaryButton("Create", () async {
+                _createNewClass();
+                Navigator.pop(context);
+              }),
+            ],
+          );
+        }
+      ),
+    );
+  }
 
   //create class
   Future<void> _createNewClass() async {
@@ -102,91 +148,23 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
       key: _scaffoldkey,
       endDrawer: const SereneDrawer(),
       appBar: SereneHeader(scaffoldKey: _scaffoldkey),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _createClassDialog,
+        backgroundColor: const Color(0xFFa5ceeb),
+        icon: const Icon(Icons.add, color: Color(0xFF1D5A71)),
+        label: const Text("Create Class", style: TextStyle(color: Color(0xFF1D5A71))),
+      ),
       body: Row(
         children: [
           Expanded( //this is ung create class part (ung left)
             flex: 1,
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                children: [
-                  const Text("Create New Class",
-                    style: TextStyle(fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1D5A71))),
-                  const SizedBox(height: 30),
-                  TextField(controller: _classNameController,
-                    decoration: InputDecoration(
-                      labelText: "Class Name",
-                      labelStyle: const TextStyle(color: Color(0xFF1D5A71)),
-                     enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: Color(0xFF1D5A71), width: 1.0),
-                      ),
-                      
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: Color(0xFF1D5A71), width: 2.0),
-                      ),
-                      
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: Colors.red, width: 1.0),
-                      ),
-                    )
-                  ),
-                  const SizedBox(height: 20),
-
-                  DropdownButtonFormField<String>(
-                    initialValue: _curriculumLevel,
-                    dropdownColor: Colors.white,
-                    items: _levels.map((l) => DropdownMenuItem(value: l,
-                      child: Text(l, style: TextStyle(color: Color(0xFF1D5A71)),))).toList(),
-                    onChanged: (val) => setState(() => _curriculumLevel = val!),
-                    decoration: InputDecoration(
-                      labelText: "Curriculum Level",
-                      labelStyle: const TextStyle(color: Color(0xFF1D5A71)),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: Color(0xFF1D5A71), width: 1.0),
-                      ),
-                      
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: Color(0xFF1D5A71), width: 2.0),
-                      ),
-                      
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: Colors.red, width: 1.0),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  _isLoading ? const CircularProgressIndicator() :
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFa5ceeb),
-                        foregroundColor: const Color(0xFF006064),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        minimumSize: const Size(200, 45),
-                      ),
-                      onPressed: _createNewClass,
-                      child: const Text("Create Class", 
-                        style: TextStyle(color: Color(0xFF1D5A71)))),
-                ],
-              ),
-            ),
+            child: _buildActivityLog(),
           ),
 
           const VerticalDivider(width: 1, thickness: 1, color: Color(0xFF1D5A71)),
 
-
           Expanded( //this is the one in the right (manage class)
-            flex: 2,
+            flex: 3,
             child: Padding(
               padding: const EdgeInsets.all(24.0),
               child: Column(
@@ -332,6 +310,53 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
     );
   }
 
+  Widget _buildActivityLog() {
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.notifications_active_outlined, color: Color(0xFF1D5A71)),
+              SizedBox(width: 10),
+              Text(
+                "Recent Activities",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1D5A71)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Expanded(
+            child: _activityLogs.isEmpty 
+              ? const Center(child: Text("No recent student activity", style: TextStyle(color: Colors.grey)))
+              : ListView.builder(
+                  itemCount: _activityLogs.length,
+                  itemBuilder: (context, index) {
+                    final log = _activityLogs[index];
+                    return Card(
+                      elevation: 0,
+                      color: const Color(0xFFF5F9FA),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      child: ListTile(
+                        leading: const CircleAvatar(
+                          backgroundColor: Color(0xFFD0EDF9),
+                          child: Icon(Icons.person, size: 20, color: Color(0xFF1D5A71)),
+                        ),
+                        title: Text(log['message'] ?? "Student activity detected", 
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                        subtitle: Text(log['time'] ?? "Just now", style: const TextStyle(fontSize: 11)),
+                      ),
+                    );
+                  },
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showSnackBar(String message, Color color) {
     double screenHeight = MediaQuery.of(context).size.height;
     double screenWidth = MediaQuery.of(context).size.width;
@@ -347,7 +372,7 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
         behavior: SnackBarBehavior.floating,
         
         margin: EdgeInsets.only(
-          bottom: screenHeight - 100, //para mapunta sa taas ung snackbar
+          bottom: screenHeight - 150, //para mapunta sa taas ung snackbar
           left: screenWidth * 0.8,
           right: 20,
         ),
@@ -360,4 +385,49 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
       ),
     );
   }
+
+  Widget _buildDialogHeader(String title, {IconData? icon}) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: const BoxDecoration(
+        color: Color(0xFFD0EDF9),
+        borderRadius: BorderRadius.only(topLeft: Radius.circular(15), topRight: Radius.circular(15)),
+      ),
+      child: Row(
+        children: [
+          if (icon != null) ...[Icon(icon, color: const Color(0xFF1D5A71)), const SizedBox(width: 12)],
+          Text(title, style: const TextStyle(color: Color(0xFF1D5A71), fontSize: 18, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+
+  InputDecoration _buildInputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(color: Color(0xFF1D5A71)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFF1D5A71), width: 1.0),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFF1D5A71), width: 2.0),
+      ),
+    );
+  }
+
+  Widget _buildPrimaryButton(String label, VoidCallback onPressed) {
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFFa5ceeb),
+        foregroundColor: const Color(0xFF1D5A71),
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      onPressed: onPressed,
+      child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+    );
+  }
+
 }
