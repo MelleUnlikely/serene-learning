@@ -937,7 +937,7 @@ Future<void> _fetchAvailableYears() async {
           const SizedBox(height: 20),
         ],
 
-          // --- CHART CONTENT ---
+          //Chart content here...
           Expanded(
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
