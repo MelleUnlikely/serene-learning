@@ -1,0 +1,13 @@
+{
+  "version": "1.0.0",
+  "enabled": true,
+  "name": "Steering Compliance Check",
+  "description": "Verifies that solutions follow steering documents, tech stack rules, and architecture guidelines before implementing features",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Before implementing this change, verify: 1) Does this follow the steering document rules? 2) Are tech stack and architecture rules respected? 3) Are any non-goals being introduced? If compliant, proceed. If not, suggest corrections."
+  }
+}

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../teacher/create_flashcard_screen.dart';
+import '../teacher/library_dialog.dart';
 import '../teacher/quiz_screen.dart';
 
 class LessonManagementScreen extends StatefulWidget {
@@ -36,7 +37,7 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
     try {
       final data = await Supabase.instance.client
           .from('lesson')
-          .select('lessonid, lessontitle')
+          .select('lessonid, lessontitle, visibility')
           .eq('classid', widget.classId)
           .order('created_at');
       setState(() => _lessons = List<Map<String, dynamic>>.from(data));
@@ -47,11 +48,12 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
     }
   }
 
-  Future<void> _createNewLesson(String title) async {
+  Future<void> _createNewLesson(String title, String visibility) async {
     try {
       await Supabase.instance.client.from('lesson').insert({
         'classid': widget.classId,
         'lessontitle': title,
+        'visibility': visibility,
       });
       _fetchLessons();
     } catch (e) {
@@ -69,11 +71,11 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
     }
   }
 
-  Future<void> _updateLessonTitle(int lessonId, String newTitle) async {
+  Future<void> _updateLessonSettings(int lessonId, String newTitle, String newVisibility) async {
     try {
       await Supabase.instance.client
           .from('lesson')
-          .update({'lessontitle': newTitle}).eq('lessonid', lessonId);
+          .update({'lessontitle': newTitle, 'visibility': newVisibility}).eq('lessonid', lessonId);
       _fetchLessons();
       _showSnackBar("Lesson updated successfully", Colors.green);
     } catch (e) {
@@ -81,127 +83,143 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
     }
   }
 
-  //Import / Deep Copy Logic
-
-  Future<String> _copyFile(String fullUrl, String folder) async {
-    const String bucketPathSegment = '/public/media/';
-    if (!fullUrl.contains(bucketPathSegment)) {
-      throw Exception("Invalid storage URL format");
-    }
-    String relativePath = fullUrl.split(bucketPathSegment).last;
-    final fileName = relativePath.split('/').last;
-    final String newRelativePath = "$folder/${DateTime.now().millisecondsSinceEpoch}_$fileName";
-
-    await Supabase.instance.client.storage
-        .from('media')
-        .copy(relativePath, newRelativePath);
-
-    return Supabase.instance.client.storage.from('media').getPublicUrl(newRelativePath);
-  }
-
-  Future<void> _duplicateLessonWithContent({
-    required int originalLessonId,
-    required int targetClassId,
-  }) async {
-    if (_isLoading) return;
-    setState(() => _isLoading = true);
-
-    try {
-      final lessonData = await Supabase.instance.client
-          .from('lesson')
-          .select()
-          .eq('lessonid', originalLessonId)
-          .single();
-
-      final newLesson = await Supabase.instance.client.from('lesson').insert({
-        'classid': targetClassId,
-        'lessontitle': "${lessonData['lessontitle']} (Copy)",
-        'created_at': DateTime.now().toIso8601String(),
-      }).select().single();
-
-      final int newLessonId = newLesson['lessonid'];
-
-      final List<dynamic> originalCards = await Supabase.instance.client
-          .from('flashcard')
-          .select()
-          .eq('lessonid', originalLessonId);
-
-      for (var card in originalCards) {
-        String? newImgUrl;
-        String? newVideoUrl;
-
-        if (card['imgurl'] != null && card['imgurl'].toString().isNotEmpty) {
-          try { newImgUrl = await _copyFile(card['imgurl'], 'images'); } catch (e) {}
-        }
-        if (card['videourl'] != null && card['videourl'].toString().isNotEmpty) {
-          try { newVideoUrl = await _copyFile(card['videourl'], 'videos'); } catch (e) {}
-        }
-
-        await Supabase.instance.client.from('flashcard').insert({
-          'lessonid': newLessonId,
-          'signmeaning': card['signmeaning'],
-          'imgurl': newImgUrl,
-          'videourl': newVideoUrl,
-        });
-      }
-      _showSnackBar("Lesson successfully imported!", Colors.green);
-      _fetchLessons();
-    } catch (e) {
-      _showSnackBar("An error occurred during the import process.", Colors.red);
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
   //Dialogs & UI Helpers
+  void _showLibraryDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => LibraryDialog(
+        classId: widget.classId,
+        onImportSuccess: () {
+          Navigator.pop(context);
+          _showSuccessSnackBar();
+          _fetchLessons();
+        },
+      ),
+    );
+  }
+
+  void _showSuccessSnackBar() {
+    _showSnackBar("Lesson imported successfully", Colors.green);
+  }
+
   Future<void> _showCreateLessonDialog() async {
     final titleController = TextEditingController();
+    String selectedVisibility = 'private';
+    const visibilityOptions = {
+      'Private': 'private',
+      'School': 'school',
+      'Share with everyone': 'public',
+    };
     return showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        titlePadding: EdgeInsets.zero,
-        title: _buildDialogHeader("New Lesson for ${widget.className}"),
-        content: _buildDialogTextField(titleController, "Lesson Title"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel", style: TextStyle(color: Color(0xFF1D5A71))),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          titlePadding: EdgeInsets.zero,
+          title: _buildDialogHeader("New Lesson for ${widget.className}"),
+          content: SizedBox(
+            width: 500,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildDialogTextField(titleController, "Lesson Title"),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: selectedVisibility,
+                  decoration: const InputDecoration(
+                    labelText: "Visibility",
+                    labelStyle: TextStyle(color: Color(0xFF1D5A71)),
+                    enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0XFF7AA9CA))),
+                    focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF1D5A71), width: 2)),
+                  ),
+                  dropdownColor: Colors.white,
+                  style: const TextStyle(color: Color(0xFF1D5A71)),
+                  items: visibilityOptions.entries
+                      .map((e) => DropdownMenuItem(value: e.value, child: Text(e.key)))
+                      .toList(),
+                  onChanged: (val) => setDialogState(() => selectedVisibility = val!),
+                ),
+              ],
+            ),
           ),
-          _buildPrimaryButton("Create", () async {
-            if (titleController.text.isNotEmpty) {
-              await _createNewLesson(titleController.text.trim());
-              Navigator.pop(context);
-            }
-          }),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel", style: TextStyle(color: Color(0xFF1D5A71))),
+            ),
+            _buildPrimaryButton("Create", () async {
+              if (titleController.text.isNotEmpty) {
+                await _createNewLesson(titleController.text.trim(), selectedVisibility);
+                Navigator.pop(context);
+              }
+            }),
+          ],
+        ),
       ),
     );
   }
 
   Future<void> _showEditLessonDialog(Map<String, dynamic> lesson) async {
     final editController = TextEditingController(text: lesson['lessontitle']);
+    String selectedVisibility = lesson['visibility'] ?? 'private';
+    const visibilityOptions = {
+      'Private': 'private',
+      'School': 'school',
+      'Share with everyone': 'public',
+    };
     return showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        titlePadding: EdgeInsets.zero,
-        title: _buildDialogHeader("Edit Lesson Title", icon: Icons.edit),
-        content: _buildDialogTextField(editController, "Lesson Title"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel", style: TextStyle(color: Color(0xFF1D5A71))),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          titlePadding: EdgeInsets.zero,
+          title: _buildDialogHeader("Edit Lesson", icon: Icons.edit),
+          content: SizedBox(
+            width: 500,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildDialogTextField(editController, "Lesson Title"),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: visibilityOptions.containsValue(selectedVisibility)
+                      ? selectedVisibility
+                      : 'private',
+                  decoration: const InputDecoration(
+                    labelText: "Visibility",
+                    labelStyle: TextStyle(color: Color(0xFF1D5A71)),
+                    enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0XFF7AA9CA))),
+                    focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF1D5A71), width: 2)),
+                  ),
+                  dropdownColor: Colors.white,
+                  style: const TextStyle(color: Color(0xFF1D5A71)),
+                  items: visibilityOptions.entries
+                      .map((e) => DropdownMenuItem(value: e.value, child: Text(e.key)))
+                      .toList(),
+                  onChanged: (val) => setDialogState(() => selectedVisibility = val!),
+                ),
+              ],
+            ),
           ),
-          _buildPrimaryButton("Save Changes", () async {
-            if (editController.text.isNotEmpty) {
-              await _updateLessonTitle(lesson['lessonid'], editController.text.trim());
-              Navigator.pop(context);
-            }
-          }),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel", style: TextStyle(color: Color(0xFF1D5A71))),
+            ),
+            _buildPrimaryButton("Save Changes", () async {
+              if (editController.text.isNotEmpty) {
+                await _updateLessonSettings(
+                  lesson['lessonid'],
+                  editController.text.trim(),
+                  selectedVisibility,
+                );
+                Navigator.pop(context);
+              }
+            }),
+          ],
+        ),
       ),
     );
   }
@@ -242,103 +260,6 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
       ),
     );
   }
-
-Future<void> _showImportDialog(int lessonId) async {
-  try {
-
-    final String? authUid = Supabase.instance.client.auth.currentUser?.id;
-
-    if (authUid == null) {
-      _showSnackBar("Please log in again.", Colors.red);
-      return;
-    }
-
-    final profileData = await Supabase.instance.client
-        .from('profiles')
-        .select('userid')
-        .eq('uid', authUid) 
-        .single();
-
-    final int numericUserId = profileData['userid'];
-
-    final classesData = await Supabase.instance.client
-        .from('class')
-        .select('classid, classname')
-        .eq('teacherid', numericUserId);
-
-    if (!mounted) return;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        titlePadding: EdgeInsets.zero,
-        title: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: const BoxDecoration(
-            color: Color(0xFFD0EDF9),
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(15),
-              topRight: Radius.circular(15),
-            ),
-          ),
-          child: const Row(
-            children: [
-              Icon(Icons.content_copy, color: Color(0xFF1D5A71)),
-              SizedBox(width: 12),
-              Text(
-                "Import/Duplicate Lesson",
-                style: TextStyle(color: Color(0xFF1D5A71), fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-        ),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: classesData.isEmpty
-              ? const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Text("No classes found in your account.", textAlign: TextAlign.center),
-                )
-              : ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: classesData.length,
-                  itemBuilder: (context, index) {
-                    final int targetId = classesData[index]['classid'];
-                    final bool isCurrentClass = targetId == widget.classId;
-
-                    return ListTile(
-                      leading: Icon(
-                        Icons.class_, 
-                        color: isCurrentClass ? Colors.orange : const Color(0xFF1D5A71)
-                      ),
-                      title: Text(
-                        "${classesData[index]['classname']} ${isCurrentClass ? '(Current Class)' : ''}",
-                        style: TextStyle(
-                          fontWeight: isCurrentClass ? FontWeight.bold : FontWeight.normal,
-                        ),
-                      ),
-                      subtitle: isCurrentClass 
-                        ? const Text("Creates a duplicate in this lesson list") 
-                        : null,
-                      onTap: _isLoading ? null : () {
-                        Navigator.pop(context);
-                        _duplicateLessonWithContent(
-                          originalLessonId: lessonId,
-                          targetClassId: targetId,
-                        );
-                      },
-                    );
-                  },
-                ),
-        ),
-      ),
-    );
-  } catch (e) {
-    _showSnackBar("Could not load your classes", Colors.red);
-  }
-}
 
   //UI Components
   Widget _buildDialogHeader(String title, {IconData? icon}) {
@@ -428,11 +349,26 @@ Future<void> _showImportDialog(int lessonId) async {
               ),
             ],
           ),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: _showCreateLessonDialog,
-            label: const Text("Add Lesson", style: TextStyle(color: Color(0xFF1D5A71))),
-            icon: const Icon(Icons.add, color: Color(0XFF1d5a71)),
-            backgroundColor: const Color(0xFFa5ceeb),
+          floatingActionButton: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              FloatingActionButton.extended(
+                heroTag: 'library',
+                onPressed: _showLibraryDialog,
+                label: const Text("Add from Library", style: TextStyle(color: Color(0xFF1D5A71))),
+                icon: const Icon(Icons.add_circle_outline, color: Color(0xFF1D5A71)),
+                backgroundColor: const Color(0xFFa5ceeb),
+              ),
+              const SizedBox(height: 12),
+              FloatingActionButton.extended(
+                heroTag: 'addLesson',
+                onPressed: _showCreateLessonDialog,
+                label: const Text("Add Lesson", style: TextStyle(color: Color(0xFF1D5A71))),
+                icon: const Icon(Icons.add, color: Color(0xFF1D5A71)),
+                backgroundColor: const Color(0xFFa5ceeb),
+              ),
+            ],
           ),
         ),
         if (_isLoading) _buildLoadingOverlay(),
@@ -498,14 +434,9 @@ Future<void> _showImportDialog(int lessonId) async {
                   onPressed: () => _showEditLessonDialog(lesson),
                 ),
                 _buildActionSegment(
-                  icon: Icons.content_copy,
-                  color: const Color(0xFF7F9BBC).withOpacity(0.8),
-                  onPressed: () => _showImportDialog(lesson['lessonid']),
-                ),
-                _buildActionSegment(
                   icon: Icons.quiz,
                   color: const Color(0xFF7F9BBC),
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => QuizScreen(lessonId: lesson['lessonid']))),
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => QuizScreen(lessonId: lesson['lessonid'], classId: widget.classId, quizTitle: lesson['lessontitle'] ?? ''))),
                 ),
                 _buildActionSegment(
                   icon: Icons.delete,

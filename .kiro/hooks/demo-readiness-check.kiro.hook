@@ -1,0 +1,13 @@
+{
+  "version": "1.0.0",
+  "enabled": true,
+  "name": "Demo Readiness Check",
+  "description": "Runs comprehensive checks before demo to ensure no console errors, localStorage works, CRUD operations function, and pie chart updates correctly",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Perform demo readiness check: 1) Check for console errors in the code, 2) Confirm all CRUD operations (Create, Read, Update, Delete) are functional, 4) Report any issues found."
+  }
+}

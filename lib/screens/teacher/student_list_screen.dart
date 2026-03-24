@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/widgets/serene_header.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_application_1/widgets/serene_menu.dart';
+import 'student_note_dialog.dart';
 
 class StudentListScreen extends StatefulWidget {
   final int classId;
@@ -180,9 +181,26 @@ class _StudentListScreenState extends State<StudentListScreen> {
                               ),
                               title: Text(name),
                               subtitle: Text(student['email'] ?? ""),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.person_remove, color: Colors.redAccent),
-                                onPressed: () => _confirmRemoval(userId, name),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.note_alt_outlined, color: Color(0xFF1D5A71)),
+                                    tooltip: 'Add Observation',
+                                    onPressed: () => showDialog(
+                                      context: context,
+                                      builder: (_) => StudentNoteDialog(
+                                        studentUuid: userId,
+                                        studentName: name,
+                                        classId: widget.classId,
+                                      ),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.person_remove, color: Colors.redAccent),
+                                    onPressed: () => _confirmRemoval(userId, name),
+                                  ),
+                                ],
                               ),
                             );
                           },
