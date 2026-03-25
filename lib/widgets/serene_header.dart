@@ -57,27 +57,48 @@ class _SereneHeaderState extends State<SereneHeader> {
       });
     }
 
-    //Subscribe using the Integer ID
-    _notificationChannel = Supabase.instance.client
-        .channel('public:notification')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.insert,
-          schema: 'public',
-          table: 'notification',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'teacher_id',
-            value: teacherIntId, 
-          ),
-          callback: (payload) {
-          if (mounted) {
-            setState(() {
+
+  _notificationChannel = Supabase.instance.client
+    .channel('notification-updates')
+    .onPostgresChanges(
+      event: PostgresChangeEvent.all,
+      schema: 'public',
+      table: 'notification',
+      filter: PostgresChangeFilter(
+        type: PostgresChangeFilterType.eq,
+        column: 'teacher_id',
+        value: teacherIntId.toString(),
+      ),
+      callback: (payload) {
+        if (mounted) {
+          setState(() {
+            if (payload.eventType == PostgresChangeEvent.insert) {
+              // Add a brand new notification to the top
               _notificationList.insert(0, payload.newRecord);
-            });
-          }
-        },
-        )
-        .subscribe();
+            } else if (payload.eventType == PostgresChangeEvent.update) {
+              // Find the existing notification in your list and update it
+              final index = _notificationList.indexWhere(
+                (n) => n['id'] == payload.newRecord['id']
+              );
+              if (index != -1) {
+                _notificationList[index] = payload.newRecord;
+                
+                final updatedItem = _notificationList.removeAt(index);
+                _notificationList.insert(0, updatedItem);
+              }
+            }
+          });
+        }
+      },
+    ).subscribe((status, [error]) {
+        if (status == RealtimeSubscribeStatus.subscribed) {
+          print("✅ Realtime: Subscribed successfully!");
+        } else if (status == RealtimeSubscribeStatus.channelError) {
+          print("❌ Realtime: Channel Error - $error");
+        } else if (status == RealtimeSubscribeStatus.timedOut) {
+          print("⏰ Realtime: Connection Timed Out");
+        }
+      });
         
     //Initial fetch of existing notifications
     final existingNotifs = await Supabase.instance.client
@@ -244,11 +265,20 @@ Future<void> _markAllAsRead() async {
     );
   }
 
-  String _formatTimestamp(String? isoString) {
-    if (isoString == null) return "";
-    final date = DateTime.parse(isoString).toLocal();
-    return "${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
+String _formatTimestamp(String? isoString) {
+  if (isoString == null) return "";
+  final date = DateTime.parse(isoString).toLocal();
+  final now = DateTime.now();
+  
+  final timeStr = "${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
+  
+  if (date.year == now.year && date.month == now.month && date.day == now.day) {
+    return "Today • $timeStr";
+  } else {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return "${months[date.month - 1]} ${date.day} • $timeStr";
   }
+}
 
   @override
   Widget build(BuildContext context) {
