@@ -4,11 +4,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class SereneHeader extends StatefulWidget implements PreferredSizeWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
   final bool showBackButton;
+  final bool showNotificationIcon;
 
   const SereneHeader({
     super.key,
     required this.scaffoldKey,
     this.showBackButton = false,
+    this.showNotificationIcon = true,
   });
 
   @override
@@ -205,8 +207,6 @@ Future<void> _markAllAsRead() async {
     );
   }
 
-  
-
   Widget _buildNotificationContent() {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -265,23 +265,24 @@ Future<void> _markAllAsRead() async {
     );
   }
 
-String _formatTimestamp(String? isoString) {
-  if (isoString == null) return "";
-  final date = DateTime.parse(isoString).toLocal();
-  final now = DateTime.now();
-  
-  final timeStr = "${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
-  
-  if (date.year == now.year && date.month == now.month && date.day == now.day) {
-    return "Today • $timeStr";
-  } else {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return "${months[date.month - 1]} ${date.day} • $timeStr";
+  String _formatTimestamp(String? isoString) {
+    if (isoString == null) return "";
+    final date = DateTime.parse(isoString).toLocal();
+    final now = DateTime.now();
+    
+    final timeStr = "${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
+    
+    if (date.year == now.year && date.month == now.month && date.day == now.day) {
+      return "Today • $timeStr";
+    } else {
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return "${months[date.month - 1]} ${date.day} • $timeStr";
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
+    final int unreadCount = _notificationList.where((n) => n['is_read'] == false).length;
     return AppBar(
       automaticallyImplyLeading: false,
       leading: widget.showBackButton
@@ -308,7 +309,7 @@ String _formatTimestamp(String? isoString) {
         ],
       ),
       actions: [
-        if (userRole == 'Teacher')
+        if (userRole == 'Teacher' && widget.showNotificationIcon)
           Stack(
             alignment: Alignment.center,
             children: [
@@ -322,21 +323,34 @@ String _formatTimestamp(String? isoString) {
                   onPressed: _toggleNotifications,
                 ),
               ),
-              if (_notificationList.any((n) => n['is_read'] == false)) 
+              if (unreadCount > 0)
                 Positioned(
-                  right: 12,
-                  top: 12,
+                  right: 6,
+                  top: 6,
                   child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 1.5), // Makes it look cleaner
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 16,
+                    minHeight: 16,
+                  ),
+                  child: Text(
+                    unreadCount > 9 ? '9+' : '$unreadCount',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
                     ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
-            ],
-          ),
+              ),
+          ],
+        ),
         IconButton(
           icon: const Icon(Icons.menu, color: Color(0xFF1D5A71)),
           onPressed: () => widget.scaffoldKey.currentState?.openEndDrawer(),

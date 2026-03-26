@@ -64,6 +64,28 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
     }
   }
 
+  // Mark one specific notification as read when tapped
+  Future<void> _markSingleAsRead(int id) async {
+    await Supabase.instance.client
+        .from('notification')
+        .update({'is_read': true})
+        .eq('id', id);
+  }
+
+  // Mark everything for this teacher as read
+  Future<void> _markAllAsRead() async {
+    try {
+      await Supabase.instance.client
+          .from('notification')
+          .update({'is_read': true})
+          .eq('teacher_id', widget.teacherId)
+          .eq('is_read', false);
+      _showSnackBar("All caught up!", Colors.green);
+    } catch (e) {
+      debugPrint("Error updating notifications: $e");
+    }
+  }
+
   void _createClassDialog() {
     showDialog(
       context: context,
@@ -147,7 +169,7 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
       backgroundColor: Colors.white,
       key: _scaffoldkey,
       endDrawer: const SereneDrawer(),
-      appBar: SereneHeader(scaffoldKey: _scaffoldkey),
+      appBar: SereneHeader(scaffoldKey: _scaffoldkey, showNotificationIcon: false),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _createClassDialog,
         backgroundColor: const Color(0xFFa5ceeb),
@@ -312,49 +334,109 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
 
   Widget _buildActivityLog() {
     return Padding(
-      padding: const EdgeInsets.all(24.0),
+      padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          // --- HEADER WITH UNREAD COUNT AND MARK ALL ---
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(Icons.notifications_active_outlined, color: Color(0xFF1D5A71)),
-              SizedBox(width: 10),
-              Text(
+              const Text(
                 "Recent Activities",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1D5A71)),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1D5A71)),
+              ),
+              TextButton(
+                onPressed: _markAllAsRead,
+                child: const Text("Mark all as read", style: TextStyle(fontSize: 11, color: Colors.blueGrey)),
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 8),
+          
+          // --- STREAM OF NOTIFICATIONS ---
           Expanded(
-            child: _activityLogs.isEmpty 
-              ? const Center(child: Text("No recent student activity", style: TextStyle(color: Colors.grey)))
-              : ListView.builder(
-                  itemCount: _activityLogs.length,
+            child: StreamBuilder<List<Map<String, dynamic>>>(
+              stream: Supabase.instance.client
+                  .from('notification')
+                  .stream(primaryKey: ['id'])
+                  .eq('teacher_id', widget.teacherId)
+                  .order('created_at', ascending: false)
+                  .limit(15),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                final logs = snapshot.data!;
+
+                return ListView.builder(
+                  itemCount: logs.length,
                   itemBuilder: (context, index) {
-                    final log = _activityLogs[index];
-                    return Card(
-                      elevation: 0,
-                      color: const Color(0xFFF5F9FA),
-                      margin: const EdgeInsets.only(bottom: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      child: ListTile(
-                        leading: const CircleAvatar(
-                          backgroundColor: Color(0xFFD0EDF9),
-                          child: Icon(Icons.person, size: 20, color: Color(0xFF1D5A71)),
+                    final notif = logs[index];
+                    final bool isUnread = notif['is_read'] == false;
+
+                    return GestureDetector(
+                      onTap: () => _markSingleAsRead(notif['id']),
+                      child: Card(
+                        elevation: 0,
+                        // Unread items get a slightly different background
+                        color: isUnread ? const Color(0xFFF0F9FF) : const Color(0xFFF5F9FA),
+                        margin: const EdgeInsets.only(bottom: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          side: isUnread 
+                              ? const BorderSide(color: Color(0xFF7AA9CA), width: 1) 
+                              : BorderSide.none,
                         ),
-                        title: Text(log['message'] ?? "Student activity detected", 
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                        subtitle: Text(log['time'] ?? "Just now", style: const TextStyle(fontSize: 11)),
+                        child: ListTile(
+                          dense: true,
+                          leading: Stack(
+                            children: [
+                              const CircleAvatar(
+                                radius: 14,
+                                backgroundColor: Color(0xFFD0EDF9),
+                                child: Icon(Icons.assignment_ind_rounded, size: 14, color: Color(0xFF1D5A71)),
+                              ),
+                              if (isUnread)
+                                Positioned(
+                                  right: 0,
+                                  top: 0,
+                                  child: Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: const BoxDecoration(color: Colors.blue, shape: BoxShape.circle),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          title: Text(
+                            notif['message'] ?? "",
+                            style: TextStyle(
+                              fontSize: 12, 
+                              fontWeight: isUnread ? FontWeight.bold : FontWeight.w500,
+                              color: const Color(0xFF1D5A71),
+                            ),
+                          ),
+                          subtitle: Text(_formatTimestamp(notif['created_at']), style: const TextStyle(fontSize: 10)),
+                        ),
                       ),
                     );
                   },
-                ),
+                );
+              },
+            ),
           ),
         ],
       ),
     );
+  }
+
+  // Copy this from your Header so the times match
+  String _formatTimestamp(String? isoString) {
+    if (isoString == null) return "";
+    final date = DateTime.parse(isoString).toLocal();
+    final now = DateTime.now();
+    final timeStr = "${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
+    if (date.year == now.year && date.month == now.month && date.day == now.day) return "Today • $timeStr";
+    return "${date.month}/${date.day} • $timeStr";
   }
 
   void _showSnackBar(String message, Color color) {

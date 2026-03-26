@@ -897,33 +897,28 @@ Future<void> _fetchAvailableYears() async {
                       onChanged: (val, year) {
                         setState(() {
                           if (val == true) {
-                            if (_selectedYears.length < 3) _selectedYears.add(year);
+                            if (!_selectedYears.contains(year)) _selectedYears.add(year);
                           } else {
-                            if (_selectedYears.length > 1) _selectedYears.remove(year);
+                            _selectedYears.remove(year);
                           }
                         });
-                        _fetchGraphData();
                       },
                     ),
                     const SizedBox(width: 12),
                     _buildFilterMenu(
                       label: "Teacher",
                       icon: Icons.people_alt_rounded,
-                      items: _availableTeachers.map((t) => t['fullname'].toString()).toList(),
-                      selectedItems: _selectedTeacherIds.map((id) {
-                        return _availableTeachers.firstWhere((t) => t['teacherid'] == id, orElse: () => {'fullname': 'Unknown'})['fullname'].toString();
-                      }).toList(),
-                      onChanged: (val, name) {
-                        final teacher = _availableTeachers.firstWhere((t) => t['fullname'] == name);
-                        final tid = teacher['teacherid'] as int;
+                      items: _availableTeachers, // Pass the list of Maps
+                      selectedItems: _selectedTeacherIds, // Pass the list of Ints
+                      onChanged: (val, teacher) {
                         setState(() {
+                          final int tid = teacher['teacherid'];
                           if (val == true) {
                             if (!_selectedTeacherIds.contains(tid)) _selectedTeacherIds.add(tid);
                           } else {
-                            if (_selectedTeacherIds.length > 1) _selectedTeacherIds.remove(tid);
+                            _selectedTeacherIds.remove(tid);
                           }
                         });
-                        _fetchGraphData();
                       },
                     ),
                   ],
@@ -942,7 +937,17 @@ Future<void> _fetchAvailableYears() async {
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : (_selectedYears.isEmpty || (_currentView == DashboardView.school && _selectedTeacherIds.isEmpty))
-                    ? const Center(child: Text("Please select filters to view data"))
+                    ? const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.filter_alt_off_outlined, size: 48, color: Colors.grey),
+                            SizedBox(height: 12),
+                            Text("No filters selected. Please select a year or teacher.", 
+                              style: TextStyle(color: Colors.grey, fontSize: 14)),
+                          ],
+                        ),
+                      )
                     : graphData.isEmpty
                         ? const Center(child: Text("No performance data found"))
                         : BarChart(
@@ -1006,51 +1011,62 @@ Future<void> _fetchAvailableYears() async {
   Widget _buildFilterMenu({
     required String label,
     required IconData icon,
-    required List<String> items,
-    required List<String> selectedItems,
-    required Function(bool?, String) onChanged,
+    required List<dynamic> items,
+    required List<dynamic> selectedItems,
+    required Function(bool?, dynamic) onChanged,
   }) {
     return PopupMenuButton<String>(
       offset: const Offset(0, 45),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       itemBuilder: (context) => items.map((item) {
         return PopupMenuItem<String>(
-          enabled: false, // Keeps the menu open when clicking
+          enabled: false,
           child: StatefulBuilder(
             builder: (context, setMenuState) {
-              final bool isSelected = selectedItems.contains(item);
+              //selection logic
+              final bool isSelected = item is Map 
+                  ? selectedItems.contains(item['teacherid']) 
+                  : selectedItems.contains(item);
+
               return CheckboxListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text(item, style: const TextStyle(fontSize: 13)),
+                title: Text(
+                  item is Map ? item['fullname'] : item.toString(),
+                  style: const TextStyle(fontSize: 13),
+                ),
                 value: isSelected,
                 activeColor: const Color(0xFF1D5A71),
                 onChanged: (val) {
-                  // 1. Update global dashboard state
-                  onChanged(val, item);
-                  // 2. Update local checkbox state so it checks immediately
-                  setMenuState(() {}); 
+                  setMenuState(() {
+                    onChanged(val, item);
+                  });
+                  Future.microtask(() => _fetchGraphData());
                 },
               );
             },
           ),
         );
       }).toList(),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFF7AA9CA)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: const Color(0xFF1D5A71)),
-            const SizedBox(width: 8),
-            Text(label, style: const TextStyle(color: Color(0xFF1D5A71), fontSize: 13, fontWeight: FontWeight.w600)),
-            const Icon(Icons.arrow_drop_down, color: Color(0xFF1D5A71)),
-          ],
-        ),
+      child: _buildFilterButton(icon, label),
+    );
+  }
+
+  Widget _buildFilterButton(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFF7AA9CA)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: const Color(0xFF1D5A71)),
+          const SizedBox(width: 8),
+          Text(label, style: const TextStyle(color: Color(0xFF1D5A71), fontSize: 13, fontWeight: FontWeight.w600)),
+          const Icon(Icons.arrow_drop_down, color: Color(0xFF1D5A71)),
+        ],
       ),
     );
   }
