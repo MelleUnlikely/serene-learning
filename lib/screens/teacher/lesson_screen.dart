@@ -55,8 +55,10 @@ class _LessonManagementScreenState extends State<LessonManagementScreen> {
         'lessontitle': title,
         'visibility': visibility,
       });
-      _fetchLessons();
+      await _fetchLessons();
+      _showSnackBar("Lesson created!", Colors.green);
     } catch (e) {
+      debugPrint("SUPABASE ERROR: $e");
       _showSnackBar("Failed to create lesson", Colors.red);
     }
   }

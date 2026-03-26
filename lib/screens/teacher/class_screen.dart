@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/widgets/serene_header.dart';
 import 'package:flutter_application_1/widgets/serene_menu.dart';
