@@ -85,7 +85,7 @@ class _UserDirectoryDialogState extends State<UserDirectoryDialog> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '${widget.roletype} Directory',
+                  '${widget.roletype} Roster',
                   style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,

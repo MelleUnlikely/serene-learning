@@ -348,7 +348,7 @@ class _StudentPerformanceScreenState extends State<StudentPerformanceScreen> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Weekly Activity Trend",
+        const Text("Weekly Attendance Trend",
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1D5A71))),
         const SizedBox(height: 20),
         Expanded(
