@@ -103,13 +103,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Map<int, Map<String, dynamic>> _schoolBarMeta = {}; // index -> {classname, classid (first year's)}
 
   // Multi-year comparison (school view only)
-  List<String> _availableYears = [];
+  List<String> _availableYears = [];  
   List<String> _selectedYears = [];
-  static const List<Color> _yearColors = [
-    Color(0xFF1D5A71),
-    Color(0xFF64B5F6),
-    Color(0xFFB0BEC5),
-  ];
 
   // Teacher filter (school view only)
   List<Map<String, dynamic>> _availableTeachers = [];
@@ -592,9 +587,12 @@ Future<void> _fetchAvailableYears() async {
                 .maybeSingle();
             score = (stats?['average_accuracy'] as num? ?? 0.0).toDouble();
           }
+
+          final barColor = score >= 60 ? const Color(0xFF1D5A71) : const Color(0xFFB0BEC5);
+
           rods.add(BarChartRodData(
             toY: score,
-            color: _yearColors[yi % _yearColors.length],
+            color: barColor,
             width: 14,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
           ));
@@ -712,6 +710,50 @@ Future<void> _fetchAvailableYears() async {
       ),
     );
   }
+
+  Widget _buildDynamicLegend() {
+  if (_currentView == DashboardView.school) { //for school legend
+    return Wrap(
+      spacing: 16,
+      children: [
+        _legendItem("Passing (60%+)", const Color(0xFF1D5A71)),
+        _legendItem("At-Risk (<60%)", const Color(0xFFB0BEC5)),
+      ],
+    );
+  } else { //otherwise...
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 12,
+          runSpacing: 8,
+          children: [
+            _legendItem("<60 (Critical)", Colors.red),
+            _legendItem("60-70", Colors.orange),
+            _legendItem("71-80", Colors.yellow.shade700),
+            _legendItem("81-90", Colors.lightGreen),
+            _legendItem("91-100", const Color(0xFF1B5E20)),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+Widget _legendItem(String label, Color color) {
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Container(
+        width: 12,
+        height: 12,
+        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3)),
+      ),
+      const SizedBox(width: 6),
+      Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF1D5A71))),
+    ],
+  );
+}
 
   void _resetToHome(String reason) {
     debugPrint(reason);
@@ -927,10 +969,8 @@ Future<void> _fetchAvailableYears() async {
           ),
 
           const SizedBox(height: 20),
-          if (_currentView == DashboardView.school) ...[
-          _buildYearLegend(),
+          _buildDynamicLegend(),
           const SizedBox(height: 20),
-        ],
 
           //Chart content here...
           Expanded(
@@ -1071,24 +1111,6 @@ Future<void> _fetchAvailableYears() async {
     );
   }
 
-  Widget _buildYearLegend() {
-    return Wrap(
-      spacing: 16,
-      runSpacing: 4,
-      children: List.generate(_selectedYears.length, (yi) {
-        final year = _selectedYears[yi];
-        final color = _yearColors[yi % _yearColors.length];
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(width: 12, height: 12, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3))),
-            const SizedBox(width: 4),
-            Text(year, style: const TextStyle(fontSize: 11, color: Color(0xFF1D5A71))),
-          ],
-        );
-      }),
-    );
-  }
   Widget _buildQuickActions() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -1124,7 +1146,6 @@ Future<void> _fetchAvailableYears() async {
       onTap: onTap, 
     );
   }
-
 
   void _showUserPopup(String roletype) {
     showDialog(
